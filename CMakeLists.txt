@@ -14,6 +14,6 @@ FetchContent_MakeAvailable(glfw)
 add_library(glad external/glad/src/glad.c)
 target_include_directories(glad PUBLIC external/glad/include)
 
-add_executable(app main.cpp)
+add_executable(app main.cpp Shader.cpp)
 	
 target_link_libraries(app PRIVATE glfw glad)
