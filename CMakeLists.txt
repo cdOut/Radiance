@@ -11,9 +11,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glfw)
 
 # GLAD
-add_library(glad external/glad/src/glad.c)
-target_include_directories(glad PUBLIC external/glad/include)
+add_library(glad ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/glad.c)
+target_include_directories(glad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include)
+
+# stb_image
+add_library(stb_image ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image/stb_image.cpp)
+target_include_directories(stb_image PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image)
 
 add_executable(app main.cpp Shader.cpp)
 	
-target_link_libraries(app PRIVATE glfw glad)
+target_link_libraries(app PRIVATE glfw glad stb_image)
