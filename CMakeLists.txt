@@ -42,6 +42,9 @@ target_link_libraries(imgui PUBLIC glfw glad)
 add_library(stb_image ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image/stb_image.cpp)
 target_include_directories(stb_image PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image)
 
-add_executable(app main.cpp Shader.cpp)
-	
+file(GLOB_RECURSE SRC_FILES src/*.cpp)
+add_executable(app ${SRC_FILES})
+target_include_directories(app PRIVATE include)
 target_link_libraries(app PRIVATE imgui stb_image)
+
+file(COPY assets/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets)
