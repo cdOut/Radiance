@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
 project(opengl-test LANGUAGES C CXX)
 
-# GLFW
 include(FetchContent)
+
+# GLFW
 FetchContent_Declare(
     glfw
     GIT_REPOSITORY https://github.com/glfw/glfw.git
@@ -14,10 +15,33 @@ FetchContent_MakeAvailable(glfw)
 add_library(glad ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/glad.c)
 target_include_directories(glad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include)
 
+# ImGui
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.92.4
+)
+FetchContent_MakeAvailable(imgui)
+
+add_library(imgui
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/imgui_demo.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+)
+target_include_directories(imgui PUBLIC
+    ${imgui_SOURCE_DIR}
+    ${imgui_SOURCE_DIR}/backends
+)
+target_link_libraries(imgui PUBLIC glfw glad)
+
 # stb_image
 add_library(stb_image ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image/stb_image.cpp)
 target_include_directories(stb_image PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image)
 
 add_executable(app main.cpp Shader.cpp)
 	
-target_link_libraries(app PRIVATE glfw glad stb_image)
+target_link_libraries(app PRIVATE imgui stb_image)
