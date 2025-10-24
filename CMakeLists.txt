@@ -15,6 +15,14 @@ FetchContent_MakeAvailable(glfw)
 add_library(glad ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/glad.c)
 target_include_directories(glad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include)
 
+# GLM
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 1.0.2
+)
+FetchContent_MakeAvailable(glm)
+
 # ImGui
 FetchContent_Declare(
     imgui
@@ -45,6 +53,6 @@ target_include_directories(stb_image PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_executable(app ${SRC_FILES})
 target_include_directories(app PRIVATE include)
-target_link_libraries(app PRIVATE imgui stb_image)
+target_link_libraries(app PRIVATE imgui glm stb_image)
 
 file(COPY assets/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets)
