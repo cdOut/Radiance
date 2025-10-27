@@ -1,11 +1,16 @@
 #ifndef MESH_H
 #define MESH_H
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+
+#include "Shader.h"
 
 struct Transform {
     glm::vec3 position {0.0f};
@@ -31,7 +36,15 @@ class Mesh {
             if (EBO) glDeleteBuffers(1, &EBO);
         }
 
-        virtual void render() const {
+        virtual void render(Shader& shader) const {
+            shader.use();
+
+            int modelLoc = glGetUniformLocation(shader.ID, "model");
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(transform.getModelMatrix()));
+
+            int colorLoc = glGetUniformLocation(shader.ID, "color");
+            glUniform3fv(colorLoc, 1, glm::value_ptr(color));
+
             glBindVertexArray(VAO);
             if (EBO != 0) {
                 glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
@@ -42,7 +55,6 @@ class Mesh {
         }
 
         Transform& getTransform() { return transform; }
-        glm::vec3& getColor() { return color; }
     protected:
         std::vector<float> vertices;
         unsigned int floatsPerVert;
