@@ -12,6 +12,7 @@
 #include <iostream>
 
 #include "Shader.h"
+#include "Cube.h"
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -185,6 +186,10 @@ int main() {
         models[i] = glm::rotate(models[i], glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
     }
 
+    Shader unlitShader("assets/shaders/unlitShader.vs", "assets/shaders/unlitShader.fs");
+
+    Cube cube;
+
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
 
@@ -194,34 +199,42 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Hello, world!");
-        ImGui::Text("This is a test window");
+        ImGui::Begin("Cube Controls");
+        ImGui::Text("Transform");
+
+        Transform& t = cube.getTransform();
+        ImGui::DragFloat3("Position", glm::value_ptr(t.position), 0.1f);
+        ImGui::DragFloat3("Rotation", glm::value_ptr(t.rotation), 0.5f);
+        ImGui::DragFloat3("Scale", glm::value_ptr(t.scale), 0.05f, 0.1f, 10.0f);
         ImGui::End();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
+        // float currentFrame = glfwGetTime();
+        // deltaTime = currentFrame - lastFrame;
+        // lastFrame = currentFrame;
 
-        int viewLoc = glGetUniformLocation(baseShader.ID, "view");
+        unlitShader.use();
+        int viewLoc = glGetUniformLocation(unlitShader.ID, "view");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        int projectionLoc = glGetUniformLocation(baseShader.ID, "projection");
+        int projectionLoc = glGetUniformLocation(unlitShader.ID, "projection");
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
-        
-        glBindVertexArray(VAO);
-        for(unsigned int i = 0; i < 10; i++) {
-            models[i] = glm::rotate(models[i], deltaTime * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-            baseShader.setMat4("model", models[i]);
+        cube.render(unlitShader);
 
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, texture1);
+        // glActiveTexture(GL_TEXTURE1);
+        // glBindTexture(GL_TEXTURE_2D, texture2);
+        
+        // glBindVertexArray(VAO);
+        // for(unsigned int i = 0; i < 10; i++) {
+        //     models[i] = glm::rotate(models[i], deltaTime * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+        //     baseShader.setMat4("model", models[i]);
+
+        //     glDrawArrays(GL_TRIANGLES, 0, 36);
+        // }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
