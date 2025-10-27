@@ -206,6 +206,7 @@ int main() {
         ImGui::DragFloat3("Position", glm::value_ptr(t.position), 0.1f);
         ImGui::DragFloat3("Rotation", glm::value_ptr(t.rotation), 0.5f);
         ImGui::DragFloat3("Scale", glm::value_ptr(t.scale), 0.05f, 0.1f, 10.0f);
+        ImGui::ColorEdit3("Color", glm::value_ptr(cube.getColor()));
         ImGui::End();
 
         ImGui::Render();

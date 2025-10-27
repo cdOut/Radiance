@@ -55,6 +55,7 @@ class Mesh {
         }
 
         Transform& getTransform() { return transform; }
+        glm::vec3& getColor() { return color; }
     protected:
         std::vector<float> vertices;
         unsigned int floatsPerVert;
