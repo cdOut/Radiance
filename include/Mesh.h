@@ -64,6 +64,8 @@ class Mesh {
             int colorLoc = glGetUniformLocation(shader.ID, "color");
             glUniform3fv(colorLoc, 1, glm::value_ptr(color));
 
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
             glBindVertexArray(VAO);
             if (EBO != 0) {
                 glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
@@ -71,6 +73,9 @@ class Mesh {
                 glDrawArrays(GL_TRIANGLES, 0, vertices.size() / floatsPerVert);
             }
             glBindVertexArray(0);
+
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
         }
     protected:
         std::vector<float> vertices;
