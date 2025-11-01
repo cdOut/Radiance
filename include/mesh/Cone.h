@@ -5,12 +5,15 @@
 
 class Cone : public Mesh {
     public:
-        Cone () {
+        virtual void generateMesh() override {
+            vertices.clear();
+            indices.clear();
+
             float r = 0.5f;
             float height = 1.0f;
-            unsigned int segments = 16;
+            unsigned int segments = 32;
 
-            for (size_t i = 0; i < segments; i++) {
+            for (int i = 0; i < segments; i++) {
                 float angle = 2.0f * M_PI * i / segments;
                 float x = r * cosf(angle);
                 float z = r * sinf(angle);
@@ -28,8 +31,6 @@ class Cone : public Mesh {
                 unsigned int next = (i + 1) % segments;
                 indices.insert(indices.end(), {i, next, segments + 1});
             }
-
-            setupMesh();
         }
 };
 

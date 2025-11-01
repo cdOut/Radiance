@@ -10,8 +10,9 @@
 #include <iostream>
 
 #include "Shader.h"
-#include "Cone.h"
-#include "Cylinder.h"
+#include "mesh/Cone.h"
+#include "mesh/Cylinder.h"
+#include "mesh/Sphere.h"
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -55,8 +56,7 @@ int main() {
 
     Shader unlitShader("assets/shaders/unlitShader.vs", "assets/shaders/unlitShader.fs");
 
-    Cone cone;
-    Cylinder cylinder;
+    auto sphere = Mesh::Create<Sphere>();
 
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -69,8 +69,7 @@ int main() {
         int projectionLoc = glGetUniformLocation(unlitShader.ID, "projection");
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-        //cone.render(unlitShader);
-        cylinder.render(unlitShader);
+        sphere->render(unlitShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

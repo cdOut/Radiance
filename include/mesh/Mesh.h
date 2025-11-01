@@ -36,55 +36,60 @@ class Mesh {
             if (EBO) glDeleteBuffers(1, &EBO);
         }
 
-        virtual void setupMesh() {
+        template<typename T>
+        static std::unique_ptr<T> Create() {
+            static_assert(std::is_base_of<Mesh, T>::value, "T must derive from Mesh");
+            auto mesh = std::make_unique<T>();
+            mesh->generateMesh();
+            mesh->initializeBuffers();
+            return mesh;
+        }
+
+        virtual void render(Shader& shader) const {
+            shader.use();
+
+            glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(transform.getModelMatrix()));
+            glUniform3fv(glGetUniformLocation(shader.ID, "color"), 1, glm::value_ptr(color));
+
+            glBindVertexArray(VAO);
+            if (!indices.empty()) {
+                glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+            } else {
+                glDrawArrays(GL_TRIANGLES, 0, vertices.size() / floatsPerVert);
+            }
+            glBindVertexArray(0);
+        }
+    protected:
+        unsigned int VAO, VBO, EBO;
+        unsigned int floatsPerVert;
+        std::vector<float> vertices;
+        std::vector<unsigned int> indices;
+
+        Transform transform;
+        glm::vec3 color;
+
+        virtual void generateMesh() = 0;
+
+        virtual void initializeBuffers() {
             glGenVertexArrays(1, &VAO);
             glGenBuffers(1, &VBO);
-            glGenBuffers(1, &EBO);
 
             glBindVertexArray(VAO);
 
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
             glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+            if (!indices.empty()) {
+                glGenBuffers(1, &EBO);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+            }
 
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
             glEnableVertexAttribArray(0);
 
             glBindVertexArray(0);
         }
-
-        virtual void render(Shader& shader) const {
-            shader.use();
-
-            int modelLoc = glGetUniformLocation(shader.ID, "model");
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(transform.getModelMatrix()));
-
-            int colorLoc = glGetUniformLocation(shader.ID, "color");
-            glUniform3fv(colorLoc, 1, glm::value_ptr(color));
-
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-            glBindVertexArray(VAO);
-            if (EBO != 0) {
-                glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-            } else {
-                glDrawArrays(GL_TRIANGLES, 0, vertices.size() / floatsPerVert);
-            }
-            glBindVertexArray(0);
-
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-        }
-    protected:
-        std::vector<float> vertices;
-        unsigned int floatsPerVert;
-        std::vector<unsigned int> indices;
-        unsigned int VAO, VBO, EBO;
-
-        Transform transform;
-        glm::vec3 color;
 };
 
 #endif
