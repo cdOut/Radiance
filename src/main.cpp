@@ -10,8 +10,7 @@
 #include <iostream>
 
 #include "Shader.h"
-#include "Cube.h"
-#include "Sphere.h"
+#include "Cone.h"
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -55,8 +54,7 @@ int main() {
 
     Shader unlitShader("assets/shaders/unlitShader.vs", "assets/shaders/unlitShader.fs");
 
-    Cube cube;
-    Sphere sphere;
+    Cone cone;
 
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -69,8 +67,7 @@ int main() {
         int projectionLoc = glGetUniformLocation(unlitShader.ID, "projection");
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-        //cube.render(unlitShader);
-        sphere.render(unlitShader);
+        cone.render(unlitShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
