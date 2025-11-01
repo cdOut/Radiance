@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 #include "Shader.h"
 
@@ -19,23 +20,19 @@ struct Transform {
 
     glm::mat4 getModelMatrix() const {
         glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), position);
-        glm::quat rotationQuat = glm::quat(glm::radians(rotation));
+        glm::quat rotationQuat = glm::quat(glm::yawPitchRoll(
+            glm::radians(rotation.y),
+            glm::radians(rotation.x),
+            glm::radians(rotation.z)
+        ));
         glm::mat4 rotationMat = glm::toMat4(rotationQuat);
         glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), scale);
-        return translationMat * rotationMat * scaleMat;
+        return translationMat * scaleMat * rotationMat;
     }
 };
 
 class Mesh {
     public:
-        Mesh() : VAO(0), VBO(0), EBO(0), floatsPerVert(3), color(1.0f) {}
-
-        virtual ~Mesh() {
-            if (VAO) glDeleteVertexArrays(1, &VAO);
-            if (VBO) glDeleteBuffers(1, &VBO);
-            if (EBO) glDeleteBuffers(1, &EBO);
-        }
-
         template<typename T>
         static std::unique_ptr<T> Create() {
             static_assert(std::is_base_of<Mesh, T>::value, "T must derive from Mesh");
@@ -45,11 +42,20 @@ class Mesh {
             return mesh;
         }
 
+        Mesh() : VAO(0), VBO(0), EBO(0), floatsPerVert(3), color(1.0f) {
+            vertices.clear();
+            indices.clear();
+        }
+
+        virtual ~Mesh() {
+            if (VAO) glDeleteVertexArrays(1, &VAO);
+            if (VBO) glDeleteBuffers(1, &VBO);
+            if (EBO) glDeleteBuffers(1, &EBO);
+        }
+
         virtual void render(Shader& shader) const {
             shader.use();
-
-            glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(transform.getModelMatrix()));
-            glUniform3fv(glGetUniformLocation(shader.ID, "color"), 1, glm::value_ptr(color));
+            shader.setMat4("model", transform.getModelMatrix());
 
             glBindVertexArray(VAO);
             if (!indices.empty()) {
@@ -59,6 +65,9 @@ class Mesh {
             }
             glBindVertexArray(0);
         }
+
+        Transform& getTransform() { return transform; }
+        glm::vec3& getColor() { return color; }
     protected:
         unsigned int VAO, VBO, EBO;
         unsigned int floatsPerVert;

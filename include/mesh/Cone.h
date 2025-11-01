@@ -6,9 +6,6 @@
 class Cone : public Mesh {
     public:
         virtual void generateMesh() override {
-            vertices.clear();
-            indices.clear();
-
             float r = 0.5f;
             float height = 1.0f;
             unsigned int segments = 32;

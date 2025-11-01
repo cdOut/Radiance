@@ -6,9 +6,6 @@
 class Sphere : public Mesh {
     public:
         virtual void generateMesh() override {
-            vertices.clear();
-            indices.clear();
-
             float r = 0.5f;
             unsigned int rings = 16;
             unsigned int segments = 32;
