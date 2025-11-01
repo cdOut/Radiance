@@ -28,7 +28,7 @@ struct Transform {
 
 class Mesh {
     public:
-        Mesh() : VAO(0), VBO(0), EBO(0), color(1.0f) {}
+        Mesh() : VAO(0), VBO(0), EBO(0), floatsPerVert(3), color(1.0f) {}
 
         virtual ~Mesh() {
             if (VAO) glDeleteVertexArrays(1, &VAO);
