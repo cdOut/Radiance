@@ -13,6 +13,9 @@
 #include "mesh/Cone.h"
 #include "mesh/Cylinder.h"
 #include "mesh/Sphere.h"
+#include "mesh/Cube.h"
+#include "mesh/Plane.h"
+#include "mesh/Torus.h"
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -44,7 +47,14 @@ int main() {
     glViewport(0, 0, windowWidth, windowHeight);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    glClearColor(0.0f, 0.0f, 0.75f, 1.0f);
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
 
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
@@ -54,26 +64,57 @@ int main() {
 
     glEnable(GL_DEPTH_TEST);
 
-    Shader unlitShader("assets/shaders/unlitShader.vs", "assets/shaders/unlitShader.fs");
+    Shader litShader("assets/shaders/baseShader.vs", "assets/shaders/litShader.fs");
 
-    auto sphere = Mesh::Create<Sphere>();
+    auto mesh = Mesh::Create<Torus>();
 
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
-
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        unlitShader.use();
-        int viewLoc = glGetUniformLocation(unlitShader.ID, "view");
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        int projectionLoc = glGetUniformLocation(unlitShader.ID, "projection");
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        litShader.use();
+        litShader.setMat4("view", view);
+        litShader.setMat4("projection", projection);
 
-        sphere->render(unlitShader);
+        litShader.setVec3("color", {1.0f, 0.5f, 0.31f});
+        litShader.setVec3("lightColor", {1.0f, 1.0f, 1.0f});
+        litShader.setVec3("lightPos", {0.0f, 1.0f, 2.0f});
+        litShader.setVec3("viewPos", {0.0f, 0.0f, 3.0f});
+
+        mesh->render(litShader);
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        ImGui::Begin("Mesh Controls");
+
+        Transform& t = mesh->getTransform();
+        glm::vec3& c = mesh->getColor();
+
+        if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::DragFloat3("Position", glm::value_ptr(t.position), 0.1f);
+            ImGui::DragFloat3("Rotation", glm::value_ptr(t.rotation), 1.0f);
+            ImGui::DragFloat3("Scale", glm::value_ptr(t.scale), 0.05f, 0.01f, 10.0f);
+        }
+
+        if (ImGui::CollapsingHeader("Color", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::ColorEdit3("Color", glm::value_ptr(c));
+        }
+
+        ImGui::End();
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     glfwTerminate();
     return 0;

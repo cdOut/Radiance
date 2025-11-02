@@ -27,7 +27,7 @@ struct Transform {
         ));
         glm::mat4 rotationMat = glm::toMat4(rotationQuat);
         glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), scale);
-        return translationMat * scaleMat * rotationMat;
+        return translationMat * rotationMat * scaleMat;
     }
 };
 
@@ -42,7 +42,7 @@ class Mesh {
             return mesh;
         }
 
-        Mesh() : VAO(0), VBO(0), EBO(0), floatsPerVert(3), color(1.0f) {
+        Mesh() : VAO(0), VBO(0), EBO(0), floatsPerVert(6), color(1.0f) {
             vertices.clear();
             indices.clear();
         }
@@ -55,7 +55,12 @@ class Mesh {
 
         virtual void render(Shader& shader) const {
             shader.use();
-            shader.setMat4("model", transform.getModelMatrix());
+
+            glm::mat4 model = transform.getModelMatrix();
+            glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
+
+            shader.setMat4("model", model);
+            shader.setMat3("normalMatrix", normalMatrix);
 
             glBindVertexArray(VAO);
             if (!indices.empty()) {
@@ -94,8 +99,10 @@ class Mesh {
                 glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
             }
 
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) 0);
             glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) (3 * sizeof(float)));
+            glEnableVertexAttribArray(1);
 
             glBindVertexArray(0);
         }

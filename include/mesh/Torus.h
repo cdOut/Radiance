@@ -20,7 +20,14 @@ class Torus : public Mesh {
                     float y = minorRadius * sinf(minorAngle);
                     float z = (majorRadius + minorRadius * cosf(minorAngle)) * sinf(majorAngle);
 
-                    vertices.insert(vertices.end(), {x, y, z});
+                    glm::vec3 normal(
+                        cosf(majorAngle) * cosf(minorAngle),
+                        sinf(minorAngle),
+                        sinf(majorAngle) * cosf(minorAngle)
+                    );
+                    normal = glm::normalize(normal);
+
+                    vertices.insert(vertices.end(), {x, y, z, normal.x, normal.y, normal.z});
                 }
             }
 
