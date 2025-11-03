@@ -4,34 +4,16 @@
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include <glad/glad.h>
-#include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
+#include "Entity.h"
 #include "Shader.h"
 
-struct Transform {
-    glm::vec3 position {0.0f};
-    glm::vec3 rotation {0.0f};
-    glm::vec3 scale {1.0f};
-
-    glm::mat4 getModelMatrix() const {
-        glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), position);
-        glm::quat rotationQuat = glm::quat(glm::yawPitchRoll(
-            glm::radians(rotation.y),
-            glm::radians(rotation.x),
-            glm::radians(rotation.z)
-        ));
-        glm::mat4 rotationMat = glm::toMat4(rotationQuat);
-        glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), scale);
-        return translationMat * rotationMat * scaleMat;
-    }
-};
-
-class Mesh {
+class Mesh : public Entity {
     public:
         template<typename T>
         static std::unique_ptr<T> Create() {
@@ -56,7 +38,7 @@ class Mesh {
         virtual void render(Shader& shader) const {
             shader.use();
 
-            glm::mat4 model = transform.getModelMatrix();
+            glm::mat4 model = getModelMatrix();
             glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
 
             shader.setMat4("model", model);
@@ -105,6 +87,18 @@ class Mesh {
             glEnableVertexAttribArray(1);
 
             glBindVertexArray(0);
+        }
+    private:
+        glm::mat4 getModelMatrix() const {
+            glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), transform.position);
+            glm::quat rotationQuat = glm::quat(glm::yawPitchRoll(
+                glm::radians(transform.rotation.y),
+                glm::radians(transform.rotation.x),
+                glm::radians(transform.rotation.z)
+            ));
+            glm::mat4 rotationMat = glm::toMat4(rotationQuat);
+            glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), transform.scale);
+            return translationMat * rotationMat * scaleMat;
         }
 };
 
