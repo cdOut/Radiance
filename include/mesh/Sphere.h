@@ -19,6 +19,7 @@ class Sphere : public Mesh {
                     float x = rr * cosf(segmentsAngle);
                     float z = rr * sinf(segmentsAngle);
                     vertices.insert(vertices.end(), {x, y, z});
+                    vertices.insert(vertices.end(), {x / r, y / r, z / r});
                 }
             }
 

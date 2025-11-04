@@ -72,7 +72,7 @@ int main() {
 
     Camera camera(90.0f, 800.0f/600.0f, 0.1f, 100.0f);
     
-    auto mesh = Mesh::Create<Torus>();
+    auto mesh = Mesh::Create<Sphere>();
 
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
