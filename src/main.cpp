@@ -57,15 +57,6 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);  
 
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-
-    ImGui::StyleColorsDark();
-
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
-
     glEnable(GL_DEPTH_TEST);
 
     Shader litShader("assets/shaders/baseShader.vs", "assets/shaders/litShader.fs");
@@ -102,37 +93,9 @@ int main() {
 
         mesh->render(litShader);
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        ImGui::Begin("Mesh Controls");
-
-        Transform& t = mesh->getTransform();
-        glm::vec3& c = mesh->getColor();
-
-        if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::DragFloat3("Position", glm::value_ptr(t.position), 0.1f);
-            ImGui::DragFloat3("Rotation", glm::value_ptr(t.rotation), 1.0f);
-            ImGui::DragFloat3("Scale", glm::value_ptr(t.scale), 0.05f, 0.01f, 10.0f);
-        }
-
-        if (ImGui::CollapsingHeader("Color", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::ColorEdit3("Color", glm::value_ptr(c));
-        }
-
-        ImGui::End();
-
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
 
     glfwTerminate();
     return 0;
