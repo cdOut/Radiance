@@ -17,4 +17,5 @@ cmake --build "$BUILD_DIR" -j$(sysctl -n hw.logicalcpu 2>/dev/null || nproc)
 
 echo "Running $EXECUTABLE_NAME..."
 cd "$BUILD_DIR"
-./"$EXECUTABLE_NAME"
+./"$EXECUTABLE_NAME" > "image.ppm"
+open "image.ppm"
