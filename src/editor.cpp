@@ -133,7 +133,5 @@ void processInput(GLFWwindow *window, glm::vec2& moveVector, glm::vec2& lookDelt
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) moveVector.x += 1.0f;
 
     if (glm::length(moveVector) > 1.0f)
-        glm::normalize(moveVector);
-
-    
+        moveVector = glm::normalize(moveVector);
 }

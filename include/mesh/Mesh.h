@@ -3,6 +3,14 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 
+#include <cmath>
+#include <vector>
+#include <memory>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
