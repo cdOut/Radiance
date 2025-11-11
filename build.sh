@@ -16,9 +16,8 @@ echo "Building project..."
 cmake --build "$BUILD_DIR" -j$(sysctl -n hw.logicalcpu 2>/dev/null || nproc)
 
 cd "$BUILD_DIR"
-./"$EXECUTABLE_NAME" > "image.ppm"
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-    explorer "image.ppm"
+    ./"$EXECUTABLE_NAME.exe"
 else
-    open "image.ppm"
+    ./"$EXECUTABLE_NAME"
 fi
