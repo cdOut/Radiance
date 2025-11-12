@@ -12,7 +12,8 @@
 #include <iostream>
 #include <stdexcept>
 #include <memory>
-#include "editor/Scene.h"
+#include "editor/core/Scene.h"
+#include "editor/mesh/primitives/Sphere.h"
 
 class Application {
     public:
@@ -235,7 +236,9 @@ class Application {
                 }
                 if (ImGui::BeginMenu("Add")) {
                     if (ImGui::BeginMenu("Mesh")) {
-                        ImGui::MenuItem("Sphere");
+                        if (ImGui::MenuItem("Sphere")) {
+                            _scene->createEntity<Sphere>();
+                        }
                         ImGui::MenuItem("Plane");
                         ImGui::EndMenu();
                     }

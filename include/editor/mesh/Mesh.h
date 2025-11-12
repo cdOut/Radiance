@@ -18,8 +18,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
-#include "Entity.h"
-#include "Shader.h"
+#include "../core/Entity.h"
+#include "../core/Shader.h"
 
 class Mesh : public Entity {
     public:
@@ -34,7 +34,7 @@ class Mesh : public Entity {
             if (_EBO) glDeleteBuffers(1, &_EBO);
         }
 
-        virtual void render() const {
+        virtual void render() {
             if (!_shader) return;
             _shader->use();
 

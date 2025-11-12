@@ -3,9 +3,10 @@
 
 #include <vector>
 #include <memory>
-#include <Entity.h>
-#include "Camera.h"
-#include "Grid.h"
+#include "Entity.h"
+#include "../Camera.h"
+#include "../Grid.h"
+#include "../mesh/Mesh.h"
 
 class Scene {
     public:
@@ -42,6 +43,17 @@ class Scene {
         }
 
         Camera* getCamera() const { return _camera; }
+
+        template<typename T, typename... Args>
+        T* createEntity(Args&&... args) {
+            auto obj = Entity::Create<T>(std::forward<Args>(args)...);
+            T* raw = obj.get();
+            if (std::is_base_of<Mesh, T>::value) {
+                raw->setShader(_meshShader.get());
+            }
+            _entities.push_back(std::move(obj));
+            return raw;
+        }
     private:
         std::vector<std::unique_ptr<Entity>> _entities;
         Camera* _camera;
@@ -49,14 +61,6 @@ class Scene {
 
         std::unique_ptr<Shader> _gridShader;
         std::unique_ptr<Shader> _meshShader;
-
-        template<typename T, typename... Args>
-        T* createEntity(Args&&... args) {
-            auto obj = Entity::Create<T>(std::forward<Args>(args)...);
-            T* raw = obj.get();
-            _entities.push_back(std::move(obj));
-            return raw;
-        }
 
         void initialize() {
             _gridShader = std::make_unique<Shader>("assets/shaders/grid.vs", "assets/shaders/grid.fs");

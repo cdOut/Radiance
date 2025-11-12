@@ -4,8 +4,8 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <vector>
-#include <Shader.h>
-#include <Entity.h>
+#include "core/Shader.h"
+#include "core/Entity.h"
 
 class Grid : public Entity {
     public:
