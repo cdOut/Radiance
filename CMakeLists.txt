@@ -47,8 +47,8 @@ target_include_directories(imgui PUBLIC
 target_link_libraries(imgui PUBLIC glfw glad)
 
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
-add_executable(app ${SRC_FILES})
-target_include_directories(app PRIVATE include)
-target_link_libraries(app PRIVATE imgui glm)
+add_executable(raycast-thesis ${SRC_FILES})
+target_include_directories(raycast-thesis PRIVATE include)
+target_link_libraries(raycast-thesis PRIVATE imgui glm)
 
 file(COPY assets/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets)

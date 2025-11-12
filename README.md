@@ -3,7 +3,6 @@
 ## Requirements
 - CMake ≥ 3.15  
 - A C++17-compatible compiler (Clang, GCC, or MSVC)  
-- Git  
 - OpenGL 3.3+ capable GPU  
 
 ---

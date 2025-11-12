@@ -1,3 +1,6 @@
+#ifndef RAYTRACER_H
+#define RAYTRACER_H
+
 #include "Color.h"
 #include "Ray.h"
 
@@ -67,3 +70,5 @@ void raytrace() {
 
     std::clog << "\rDone.                 \n";
 }
+
+#endif
