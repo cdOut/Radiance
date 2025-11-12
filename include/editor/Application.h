@@ -107,6 +107,7 @@ class Application {
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+                _shader.use();
                 _shader.setMat4("view", _camera.getViewMatrix());
                 _shader.setMat4("projection", _camera.getProjectionMatrix());
 
@@ -115,11 +116,14 @@ class Application {
                 _shader.setVec3("lightPos", {0.0f, 1.0f, 2.0f});
                 _shader.setVec3("viewPos", {0.0f, 0.0f, 3.0f});
 
+                _gridShader.use();
                 _gridShader.setMat4("view", _camera.getViewMatrix());
                 _gridShader.setMat4("projection", _camera.getProjectionMatrix());
 
+                _grid->handleCameraPos(_camera.getTransform().position);
+
                 _grid->render(_gridShader);
-                //_mesh->render(_shader);
+                _mesh->render(_shader);
 
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

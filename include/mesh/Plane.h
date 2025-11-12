@@ -16,8 +16,10 @@ class Plane : public Mesh {
                 {h, 0.0f, -h},
             };
 
+            glm::vec3 normal = {0.0f, 1.0f, 0.0f};
+
             for (const auto& vert : v) {
-                vertices.insert(vertices.end(), {vert.x, vert.y, vert.z});
+                vertices.insert(vertices.end(), {vert.x, vert.y, vert.z, normal.x, normal.y, normal.z});
             }
 
             indices = {

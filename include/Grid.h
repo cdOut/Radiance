@@ -6,9 +6,9 @@
 #include <vector>
 #include <Shader.h>
 
-class Grid {
+class Grid : public Entity {
     public:
-        Grid(int size = 100, float spacing = 1.0f) {
+        Grid(int size = 50, float spacing = 1.0f) {
             int halfSize = size / 2;
             for (int i = -halfSize; i <= halfSize; i++) {
                 float x = i * spacing;
@@ -29,8 +29,16 @@ class Grid {
             glDeleteBuffers(1, &_VBO);
         }
 
+        void handleCameraPos(const glm::vec3& cameraPos) {
+            transform.position = glm::vec3(glm::floor(cameraPos.x), 0.0f, glm::floor(cameraPos.z));
+        }
+
         void render(Shader& shader) {
             shader.use();
+
+            glm::mat4 model = getModelMatrix();
+
+            shader.setMat4("model", model);
 
             glBindVertexArray(_VAO);
             glDrawArrays(GL_LINES, 0, _vertices.size() / _floatsPerVert);
