@@ -3,6 +3,7 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
@@ -10,12 +11,8 @@
 #include <string>
 #include <iostream>
 #include <stdexcept>
-
-#include <mesh/Mesh.h>
-#include <mesh/primitives/Torus.h>
-#include <editor/Camera.h>
-#include <editor/Grid.h>
-#include <Shader.h>
+#include <memory>
+#include "editor/Scene.h"
 
 class Application {
     public:
@@ -69,13 +66,9 @@ class Application {
             ImGui_ImplGlfw_InitForOpenGL(_window, true);
             ImGui_ImplOpenGL3_Init("#version 330");
 
-            initializeFramebuffer();
+            _scene = std::make_unique<Scene>();
 
-            _shader = Shader("assets/shaders/baseShader.vs", "assets/shaders/litShader.fs");
-            _gridShader = Shader("assets/shaders/grid.vs", "assets/shaders/grid.fs");
-            _camera = Camera(90.0f, 16.0f/9.0f, 0.1f, 100.0f);
-            _grid = std::make_unique<Grid>();
-            _mesh = Mesh::Create<Torus>();
+            initializeFramebuffer();
         }
 
         ~Application() {
@@ -92,12 +85,15 @@ class Application {
 
         void run() {
             while (!glfwWindowShouldClose(_window)) {
+                float currentFrame = glfwGetTime();
+                float deltaTime = currentFrame - _lastTime;
+                _lastTime = currentFrame;
+
                 glfwPollEvents();
                 processInput(_window, _moveVector);
 
-                float currentFrame = glfwGetTime();
-                _deltaTime = currentFrame - _lastTime;
-                _lastTime = currentFrame;
+                _scene->update(deltaTime, _moveVector, _lookDelta, _isRightButtonDown);
+                _lookDelta = {0.0f, 0.0f};
 
                 glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 
@@ -105,33 +101,11 @@ class Application {
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                _shader.use();
-                _shader.setMat4("view", _camera.getViewMatrix());
-                _shader.setMat4("projection", _camera.getProjectionMatrix());
-
-                _shader.setVec3("color", {1.0f, 0.5f, 0.31f});
-                _shader.setVec3("lightColor", {1.0f, 1.0f, 1.0f});
-                _shader.setVec3("lightPos", {0.0f, 1.0f, 2.0f});
-                _shader.setVec3("viewPos", {0.0f, 0.0f, 3.0f});
-
-                _gridShader.use();
-                _gridShader.setMat4("view", _camera.getViewMatrix());
-                _gridShader.setMat4("projection", _camera.getProjectionMatrix());
-
-                _grid->handleCameraPos(_camera.getTransform().position);
-
-                _grid->render(_gridShader);
-                _mesh->render(_shader);
+                _scene->render(deltaTime);
 
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
                 renderUI();
-
-                if (_isRightButtonDown) {
-                    _camera.handleMove(_moveVector, _deltaTime);
-                    _camera.handleLook(_lookDelta);
-                }
-                _lookDelta = {0.0f, 0.0f};
                 
                 glfwSwapBuffers(_window);
             }
@@ -148,12 +122,6 @@ class Application {
         unsigned int _viewportTexture;
         ImVec2 _viewportSize, _lastViewportSize;
 
-        Shader _shader;
-        Shader _gridShader;
-        Camera _camera;
-        std::unique_ptr<Mesh> _mesh;
-        std::unique_ptr<Grid> _grid;
-
         glm::vec2 _moveVector;
         glm::vec2 _lookDelta{0.0f};
         glm::vec2 _lastMousePos{0.0f};
@@ -161,7 +129,9 @@ class Application {
         bool _isViewportHovered;
         bool _isRightButtonDown;
 
-        float _deltaTime = 0.0f, _lastTime = 0.0f;
+        float _lastTime = 0.0f;
+
+        std::unique_ptr<Scene> _scene;
 
         void initializeFramebuffer() {
             glGenFramebuffers(1, &_FBO);
@@ -294,7 +264,7 @@ class Application {
                 resizeFramebuffer(_viewportSize.x, _viewportSize.y);
                 _lastViewportSize = _viewportSize;
 
-                _camera.setAspect(_viewportSize.x / _viewportSize.y);
+                _scene->getCamera()->setAspect(_viewportSize.x / _viewportSize.y);
             }
 
             ImGui::Image((ImTextureID)(intptr_t)_viewportTexture, _viewportSize, ImVec2(0, 1), ImVec2(1, 0));

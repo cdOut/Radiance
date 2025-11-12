@@ -34,12 +34,13 @@ class Grid : public Entity {
             transform.position = glm::vec3(glm::floor(cameraPos.x), 0.0f, glm::floor(cameraPos.z));
         }
 
-        void render(Shader& shader) {
-            shader.use();
+        void render() {
+            if (!_shader) return;
+            _shader->use();
 
             glm::mat4 model = getModelMatrix();
 
-            shader.setMat4("model", model);
+            _shader->setMat4("model", model);
 
             glBindVertexArray(_VAO);
             glDrawArrays(GL_LINES, 0, _vertices.size() / _floatsPerVert);

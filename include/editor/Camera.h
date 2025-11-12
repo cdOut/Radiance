@@ -7,13 +7,7 @@
 
 class Camera : public Entity {
     public:
-        Camera() : _fov(45.0f), _aspect(16.0f/9.0f), _nearPlane(0.1f), _farPlane(100.0f) {
-            setDefaultTransform();
-            calculateVectors();
-        }
-        
-        Camera(float fov, float aspect, float nearPlane, float farPlane) 
-        : _fov(fov), _aspect(aspect), _nearPlane(nearPlane), _farPlane(farPlane) {
+        Camera() : _fov(90.0f), _aspect(16.0f/9.0f), _nearPlane(0.1f), _farPlane(100.0f) {
             setDefaultTransform();
             calculateVectors();
         }

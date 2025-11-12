@@ -1,8 +1,13 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <Shader.h>
 
 struct Transform {
     glm::vec3 position {0.0f};
@@ -14,9 +19,25 @@ class Entity {
     public:
         virtual ~Entity() = default;
 
+        template<typename T, typename... Args>
+        static std::unique_ptr<T> Create(Args&&... args) {
+            static_assert(std::is_base_of<Entity, T>::value, "T must derive from Entity");
+
+            auto obj = std::make_unique<T>(std::forward<Args>(args)...);
+            obj->initializeCreate();
+            return obj;
+        }
+
+        virtual void render() {}
+
         const Transform& getTransform() const { return transform; }
+
+        void setShader(Shader* shader) { _shader = shader; }
     protected:
         Transform transform;
+        Shader* _shader = nullptr;
+
+        virtual void initializeCreate() {}
         
         virtual glm::mat4 getModelMatrix() const {
             glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), transform.position);

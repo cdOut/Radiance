@@ -23,15 +23,6 @@
 
 class Mesh : public Entity {
     public:
-        template<typename T>
-        static std::unique_ptr<T> Create() {
-            static_assert(std::is_base_of<Mesh, T>::value, "T must derive from Mesh");
-            auto mesh = std::make_unique<T>();
-            mesh->generateMesh();
-            mesh->initializeBuffers();
-            return mesh;
-        }
-
         Mesh() : _VAO(0), _VBO(0), _EBO(0), _floatsPerVert(6) {
             _vertices.clear();
             _indices.clear();
@@ -43,14 +34,15 @@ class Mesh : public Entity {
             if (_EBO) glDeleteBuffers(1, &_EBO);
         }
 
-        virtual void render(Shader& shader) const {
-            shader.use();
+        virtual void render() const {
+            if (!_shader) return;
+            _shader->use();
 
             glm::mat4 model = getModelMatrix();
             glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
 
-            shader.setMat4("model", model);
-            shader.setMat3("normalMatrix", normalMatrix);
+            _shader->setMat4("model", model);
+            _shader->setMat3("normalMatrix", normalMatrix);
 
             glBindVertexArray(_VAO);
             if (!_indices.empty()) {
@@ -61,6 +53,10 @@ class Mesh : public Entity {
             glBindVertexArray(0);
         }
 
+        virtual void initializeCreate() override {
+            generateMesh();
+            initializeBuffers();
+        }
     protected:
         unsigned int _VAO, _VBO, _EBO;
         unsigned int _floatsPerVert;
