@@ -44,6 +44,7 @@ class Application {
             glfwSetFramebufferSizeCallback(_window, framebufferSizeCallback);
             glfwSetWindowSizeCallback(_window, windowSizeCallback);
             glfwSetCursorPosCallback(_window, mouseCallback); 
+            glfwSetMouseButtonCallback(_window, mouseButtonCallback);
 
             if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
                 glfwDestroyWindow(_window);
@@ -97,10 +98,6 @@ class Application {
                 _deltaTime = currentFrame - _lastTime;
                 _lastTime = currentFrame;
 
-                _camera.handleMove(_moveVector, _deltaTime);
-                _camera.handleLook(_lookDelta);
-                _lookDelta = {0.0f, 0.0f};
-
                 glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 
                 glViewport(0, 0, (int)_viewportSize.x, (int)_viewportSize.y);
@@ -128,6 +125,12 @@ class Application {
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
                 renderUI();
+
+                if (_isRightButtonDown) {
+                    _camera.handleMove(_moveVector, _deltaTime);
+                    _camera.handleLook(_lookDelta);
+                }
+                _lookDelta = {0.0f, 0.0f};
                 
                 glfwSwapBuffers(_window);
             }
@@ -142,7 +145,7 @@ class Application {
 
         unsigned int _FBO, _RBO;
         unsigned int _viewportTexture;
-        ImVec2 _viewportSize;
+        ImVec2 _viewportSize, _lastViewportSize;
 
         Shader _shader;
         Shader _gridShader;
@@ -154,6 +157,8 @@ class Application {
         glm::vec2 _lookDelta{0.0f};
         glm::vec2 _lastMousePos{0.0f};
         bool _firstMouse = true;
+        bool _isViewportHovered;
+        bool _isRightButtonDown;
 
         float _deltaTime = 0.0f, _lastTime = 0.0f;
 
@@ -215,6 +220,20 @@ class Application {
             app->_lookDelta = {xOffset, yOffset};
         }
 
+        static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+            auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+
+            if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+                if (action == GLFW_PRESS && app->_isViewportHovered) {
+                    app->_isRightButtonDown = true;
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                } else if (action == GLFW_RELEASE) {
+                    app->_isRightButtonDown = false;
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                }
+            }
+        }
+
         void processInput(GLFWwindow *window, glm::vec2& moveVector) {
             if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
                 glfwSetWindowShouldClose(window, true);
@@ -270,10 +289,15 @@ class Application {
             ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
             _viewportSize = ImGui::GetContentRegionAvail();
-            resizeFramebuffer(_viewportSize.x, _viewportSize.y);
-            _camera.setAspect(_viewportSize.x / _viewportSize.y);
+            if (_viewportSize.x != _lastViewportSize.x || _viewportSize.y != _lastViewportSize.y) {
+                resizeFramebuffer(_viewportSize.x, _viewportSize.y);
+                _lastViewportSize = _viewportSize;
+
+                _camera.setAspect(_viewportSize.x / _viewportSize.y);
+            }
 
             ImGui::Image((ImTextureID)(intptr_t)_viewportTexture, _viewportSize, ImVec2(0, 1), ImVec2(1, 0));
+            _isViewportHovered = ImGui::IsItemHovered();
 
             ImVec2 imageMin = ImGui::GetItemRectMin();
             ImVec2 imageMax = ImGui::GetItemRectMax();
