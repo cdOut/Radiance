@@ -32,15 +32,15 @@ class Mesh : public Entity {
             return mesh;
         }
 
-        Mesh() : VAO(0), VBO(0), EBO(0), floatsPerVert(6), color(1.0f) {
-            vertices.clear();
-            indices.clear();
+        Mesh() : _VAO(0), _VBO(0), _EBO(0), _floatsPerVert(6) {
+            _vertices.clear();
+            _indices.clear();
         }
 
         virtual ~Mesh() {
-            if (VAO) glDeleteVertexArrays(1, &VAO);
-            if (VBO) glDeleteBuffers(1, &VBO);
-            if (EBO) glDeleteBuffers(1, &EBO);
+            if (_VAO) glDeleteVertexArrays(1, &_VAO);
+            if (_VBO) glDeleteBuffers(1, &_VBO);
+            if (_EBO) glDeleteBuffers(1, &_EBO);
         }
 
         virtual void render(Shader& shader) const {
@@ -52,41 +52,36 @@ class Mesh : public Entity {
             shader.setMat4("model", model);
             shader.setMat3("normalMatrix", normalMatrix);
 
-            glBindVertexArray(VAO);
-            if (!indices.empty()) {
-                glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+            glBindVertexArray(_VAO);
+            if (!_indices.empty()) {
+                glDrawElements(GL_TRIANGLES, _indices.size(), GL_UNSIGNED_INT, 0);
             } else {
-                glDrawArrays(GL_TRIANGLES, 0, vertices.size() / floatsPerVert);
+                glDrawArrays(GL_TRIANGLES, 0, _vertices.size() / _floatsPerVert);
             }
             glBindVertexArray(0);
         }
 
-        Transform& getTransform() { return transform; }
-        glm::vec3& getColor() { return color; }
     protected:
-        unsigned int VAO, VBO, EBO;
-        unsigned int floatsPerVert;
-        std::vector<float> vertices;
-        std::vector<unsigned int> indices;
-
-        Transform transform;
-        glm::vec3 color;
+        unsigned int _VAO, _VBO, _EBO;
+        unsigned int _floatsPerVert;
+        std::vector<float> _vertices;
+        std::vector<unsigned int> _indices;
 
         virtual void generateMesh() = 0;
 
         virtual void initializeBuffers() {
-            glGenVertexArrays(1, &VAO);
-            glGenBuffers(1, &VBO);
+            glGenVertexArrays(1, &_VAO);
+            glGenBuffers(1, &_VBO);
 
-            glBindVertexArray(VAO);
+            glBindVertexArray(_VAO);
 
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, _VBO);
+            glBufferData(GL_ARRAY_BUFFER, _vertices.size() * sizeof(float), _vertices.data(), GL_STATIC_DRAW);
 
-            if (!indices.empty()) {
-                glGenBuffers(1, &EBO);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-                glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+            if (!_indices.empty()) {
+                glGenBuffers(1, &_EBO);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _EBO);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, _indices.size() * sizeof(unsigned int), _indices.data(), GL_STATIC_DRAW);
             }
 
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) 0);

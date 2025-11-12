@@ -1,7 +1,7 @@
 #ifndef SPHERE_H
 #define SPHERE_H
 
-#include "Mesh.h"
+#include "../Mesh.h"
 
 class Sphere : public Mesh {
     public:
@@ -18,8 +18,8 @@ class Sphere : public Mesh {
                     float segmentsAngle = 2.0f * M_PI * j / segments;
                     float x = rr * cosf(segmentsAngle);
                     float z = rr * sinf(segmentsAngle);
-                    vertices.insert(vertices.end(), {x, y, z});
-                    vertices.insert(vertices.end(), {x / r, y / r, z / r});
+                    _vertices.insert(_vertices.end(), {x, y, z});
+                    _vertices.insert(_vertices.end(), {x / r, y / r, z / r});
                 }
             }
 
@@ -28,8 +28,8 @@ class Sphere : public Mesh {
                     unsigned int k1 = i * (segments + 1) + j;
                     unsigned int k2 = k1 + segments + 1;
 
-                    indices.insert(indices.end(), {k1, k2, k1 + 1});
-                    indices.insert(indices.end(), {k1 + 1, k2, k2 + 1});
+                    _indices.insert(_indices.end(), {k1, k2, k1 + 1});
+                    _indices.insert(_indices.end(), {k1 + 1, k2, k2 + 1});
                 }
             }
         }

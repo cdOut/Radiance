@@ -12,7 +12,7 @@
 #include <stdexcept>
 
 #include <mesh/Mesh.h>
-#include <mesh/Sphere.h>
+#include <mesh/primitives/Torus.h>
 #include <Camera.h>
 #include <Shader.h>
 #include <Grid.h>
@@ -36,6 +36,7 @@ class Application {
                 glfwTerminate();
                 throw std::runtime_error("Failed to create GLFW window");
             }
+            glfwSetWindowSizeLimits(_window, 800, 600, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
             glfwMakeContextCurrent(_window);
             glfwSwapInterval(1);
@@ -74,7 +75,7 @@ class Application {
             _gridShader = Shader("assets/shaders/grid.vs", "assets/shaders/grid.fs");
             _camera = Camera(90.0f, 16.0f/9.0f, 0.1f, 100.0f);
             _grid = std::make_unique<Grid>();
-            _mesh = Mesh::Create<Sphere>();
+            _mesh = Mesh::Create<Torus>();
         }
 
         ~Application() {

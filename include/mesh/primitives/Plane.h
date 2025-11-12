@@ -1,7 +1,7 @@
 #ifndef PLANE_H
 #define PLANE_H
 
-#include "Mesh.h"
+#include "../Mesh.h"
 
 class Plane : public Mesh {
     public:
@@ -19,10 +19,10 @@ class Plane : public Mesh {
             glm::vec3 normal = {0.0f, 1.0f, 0.0f};
 
             for (const auto& vert : v) {
-                vertices.insert(vertices.end(), {vert.x, vert.y, vert.z, normal.x, normal.y, normal.z});
+                _vertices.insert(_vertices.end(), {vert.x, vert.y, vert.z, normal.x, normal.y, normal.z});
             }
 
-            indices = {
+            _indices = {
                 0, 1, 2,
                 2, 3, 1,
             };

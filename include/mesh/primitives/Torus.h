@@ -1,7 +1,7 @@
 #ifndef TORUS_H
 #define TORUS_H
 
-#include "Mesh.h"
+#include "../Mesh.h"
 
 class Torus : public Mesh {
     public:
@@ -27,7 +27,7 @@ class Torus : public Mesh {
                     );
                     normal = glm::normalize(normal);
 
-                    vertices.insert(vertices.end(), {x, y, z, normal.x, normal.y, normal.z});
+                    _vertices.insert(_vertices.end(), {x, y, z, normal.x, normal.y, normal.z});
                 }
             }
 
@@ -36,8 +36,8 @@ class Torus : public Mesh {
                     unsigned int k1 = i * (minorSegments + 1) + j;
                     unsigned int k2 = k1 + minorSegments + 1;
 
-                    indices.insert(indices.end(), {k1, k2, k1 + 1});
-                    indices.insert(indices.end(), {k1 + 1, k2, k2 + 1});
+                    _indices.insert(_indices.end(), {k1, k2, k1 + 1});
+                    _indices.insert(_indices.end(), {k1 + 1, k2, k2 + 1});
                 }
             }
         }

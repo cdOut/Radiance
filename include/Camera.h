@@ -49,8 +49,8 @@ class Camera : public Entity {
         float _nearPlane;
         float _farPlane;
 
-        float _cameraSpeed = 1.0f;
-        float _cameraSensitivity = 0.1f;
+        float _cameraSpeed = 2.0f;
+        float _cameraSensitivity = 0.2f;
 
         glm::vec3 _forward {0.0f, 0.0f, -1.0f};
         glm::vec3 _right {1.0f, 0.0f, 0.0f};
