@@ -2,11 +2,13 @@
 #define SHADER_H
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <glm/gtc/type_ptr.hpp>
 
 class Shader {
     public:
@@ -102,7 +104,7 @@ class Shader {
 
         void setVec3(const std::string& name, glm::vec3 value) const {
             glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(value));
-        };
+        }
 
         void setMat3(const std::string &name, glm::mat3 value) const {
             glUniformMatrix3fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE,  glm::value_ptr(value));

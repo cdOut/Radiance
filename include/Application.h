@@ -13,9 +13,9 @@
 
 #include <mesh/Mesh.h>
 #include <mesh/primitives/Torus.h>
-#include <Camera.h>
+#include <editor/Camera.h>
+#include <editor/Grid.h>
 #include <Shader.h>
-#include <Grid.h>
 
 class Application {
     public:

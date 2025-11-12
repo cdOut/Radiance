@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <Shader.h>
+#include <Entity.h>
 
 class Grid : public Entity {
     public:
