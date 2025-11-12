@@ -7,50 +7,54 @@
 
 class Camera : public Entity {
     public:
-        Camera() : fov(45.0f), aspect(16.0f/9.0f), nearPlane(0.1f), farPlane(100.0f) {
+        Camera() : _fov(45.0f), _aspect(16.0f/9.0f), _nearPlane(0.1f), _farPlane(100.0f) {
             setDefaultTransform();
             calculateVectors();
         }
         
         Camera(float fov, float aspect, float nearPlane, float farPlane) 
-        : fov(fov), aspect(aspect), nearPlane(nearPlane), farPlane(farPlane) {
+        : _fov(fov), _aspect(aspect), _nearPlane(nearPlane), _farPlane(farPlane) {
             setDefaultTransform();
             calculateVectors();
         }
 
         glm::mat4 getViewMatrix() const {
-            return glm::lookAt(transform.position, transform.position + forward, up);
+            return glm::lookAt(transform.position, transform.position + _forward, _up);
         }
 
         glm::mat4 getProjectionMatrix() const {
-            return glm::perspective(glm::radians(fov), aspect, nearPlane, farPlane);
+            return glm::perspective(glm::radians(_fov), _aspect, _nearPlane, _farPlane);
         }
 
         void handleMove(const glm::vec2& moveVector, const float& deltaTime) {
-            transform.position += moveVector.x * right * cameraSpeed * deltaTime;
-            transform.position += moveVector.y * forward * cameraSpeed * deltaTime;
+            transform.position += moveVector.x * _right * _cameraSpeed * deltaTime;
+            transform.position += moveVector.y * _forward * _cameraSpeed * deltaTime;
         }
 
         void handleLook(const glm::vec2& lookDeltaVector) {
-            transform.rotation.x += lookDeltaVector.y * cameraSensitivity;
-            transform.rotation.y += lookDeltaVector.x * cameraSensitivity;
+            transform.rotation.x += lookDeltaVector.y * _cameraSensitivity;
+            transform.rotation.y += lookDeltaVector.x * _cameraSensitivity;
 
             transform.rotation.x = glm::clamp(transform.rotation.x, -89.0f, 89.0f);
 
             calculateVectors();
         }
+
+        void setAspect(float aspect) {
+            _aspect = aspect;
+        }
     private:
-        float fov;
-        float aspect;
-        float nearPlane;
-        float farPlane;
+        float _fov;
+        float _aspect;
+        float _nearPlane;
+        float _farPlane;
 
-        float cameraSpeed = 1.0f;
-        float cameraSensitivity = 0.1f;
+        float _cameraSpeed = 1.0f;
+        float _cameraSensitivity = 0.1f;
 
-        glm::vec3 forward {0.0f, 0.0f, -1.0f};
-        glm::vec3 right {1.0f, 0.0f, 0.0f};
-        glm::vec3 up {0.0f, 1.0f, 0.0f};
+        glm::vec3 _forward {0.0f, 0.0f, -1.0f};
+        glm::vec3 _right {1.0f, 0.0f, 0.0f};
+        glm::vec3 _up {0.0f, 1.0f, 0.0f};
 
         void setDefaultTransform() {
             transform.position = glm::vec3(-2.0f, 2.0f, 2.0f);
@@ -63,9 +67,9 @@ class Camera : public Entity {
             direction.y = sinf(glm::radians(transform.rotation.x));
             direction.z = sinf(glm::radians(transform.rotation.y)) * cosf(glm::radians(transform.rotation.x));
 
-            forward = glm::normalize(direction);
-            right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
-            up = glm::normalize(glm::cross(right, forward));
+            _forward = glm::normalize(direction);
+            _right = glm::normalize(glm::cross(_forward, glm::vec3(0.0f, 1.0f, 0.0f)));
+            _up = glm::normalize(glm::cross(_right, _forward));
         }
 };
 

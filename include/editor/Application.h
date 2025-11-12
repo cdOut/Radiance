@@ -71,7 +71,7 @@ class Application {
 
             _shader = Shader("assets/shaders/baseShader.vs", "assets/shaders/litShader.fs");
             _gridShader = Shader("assets/shaders/grid.vs", "assets/shaders/grid.fs");
-            _camera = Camera(90.0f, _aspect, 0.1f, 100.0f);
+            _camera = Camera(90.0f, 16.0f/9.0f, 0.1f, 100.0f);
             _grid = std::make_unique<Grid>();
             _mesh = Mesh::Create<Sphere>();
         }
@@ -103,7 +103,7 @@ class Application {
 
                 glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 
-                glViewport(0, 0, (int)_textureWidth, (int)_textureHeight);
+                glViewport(0, 0, (int)_viewportSize.x, (int)_viewportSize.y);
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -138,12 +138,11 @@ class Application {
         int _height;
         const char* _title;
 
-        float _aspect = 16.0 / 9.0;
+        float _aspect = 16.0f / 9.0f;
 
         unsigned int _FBO, _RBO;
         unsigned int _viewportTexture;
-
-        int _textureWidth, _textureHeight;
+        ImVec2 _viewportSize;
 
         Shader _shader;
         Shader _gridShader;
@@ -165,7 +164,7 @@ class Application {
             glGenTextures(1, &_viewportTexture);
             glGenRenderbuffers(1, &_RBO);
 
-            resizeFramebuffer(1000, 600);
+            resizeFramebuffer(800, 600);
                      
             if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
                 throw std::runtime_error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
@@ -270,23 +269,32 @@ class Application {
             ImGui::SetNextWindowSize(ImVec2(leftWidth, panelHeight));
             ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
-            ImVec2 viewportSize = ImGui::GetContentRegionAvail();
-            _textureWidth = viewportSize.x;
-            _textureHeight = _textureWidth / _aspect;
-            if (_textureHeight > viewportSize.y) {
-                _textureHeight = viewportSize.y;
-                _textureWidth = _textureHeight * _aspect;
+            _viewportSize = ImGui::GetContentRegionAvail();
+            resizeFramebuffer(_viewportSize.x, _viewportSize.y);
+            _camera.setAspect(_viewportSize.x / _viewportSize.y);
+
+            ImGui::Image((ImTextureID)(intptr_t)_viewportTexture, _viewportSize, ImVec2(0, 1), ImVec2(1, 0));
+
+            ImVec2 imageMin = ImGui::GetItemRectMin();
+            ImVec2 imageMax = ImGui::GetItemRectMax();
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+            float aspectWidth = _viewportSize.x;
+            float aspectHeight = _viewportSize.x / _aspect;
+            if (aspectHeight > _viewportSize.y) {
+                aspectWidth = _viewportSize.y * _aspect;
+                aspectHeight = _viewportSize.y;
             }
-            resizeFramebuffer(_textureWidth, _textureHeight);
 
-            ImVec2 cursor = ImGui::GetCursorPos();
-            ImVec2 offset = {
-                (viewportSize.x - _textureWidth) * 0.5f,
-                (viewportSize.y - _textureHeight) * 0.5f
-            };
-            ImGui::SetCursorPos({cursor.x + offset.x, cursor.y + offset.y});
+            float overlayWidth = (_viewportSize.x - aspectWidth) * 0.5f;
+            float overlayHeight = (_viewportSize.y - aspectHeight) * 0.5f;
 
-            ImGui::Image((ImTextureID)(intptr_t)_viewportTexture, ImVec2(_textureWidth, _textureHeight), ImVec2(0, 1), ImVec2(1, 0));
+            ImU32 overlayColor = IM_COL32(16, 16, 16, 192);
+
+            drawList->AddRectFilled(ImVec2(imageMin.x, imageMin.y), ImVec2(imageMin.x + overlayWidth, imageMax.y), overlayColor);
+            drawList->AddRectFilled(ImVec2(imageMax.x - overlayWidth, imageMin.y), ImVec2(imageMax.x, imageMax.y), overlayColor);
+            drawList->AddRectFilled(ImVec2(imageMin.x + overlayWidth, imageMin.y), ImVec2(imageMax.x - overlayWidth, imageMin.y + overlayHeight), overlayColor);
+            drawList->AddRectFilled(ImVec2(imageMin.x + overlayWidth, imageMax.y - overlayHeight), ImVec2(imageMax.x - overlayWidth, imageMax.y), overlayColor);
 
             ImGui::End();
 

@@ -1,6 +1,6 @@
 #include <editor/Application.h>
 
-const int WINDOW_WIDTH = 1200;
+const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 const char* WINDOW_TITLE = "raytracing-thesis";
 
