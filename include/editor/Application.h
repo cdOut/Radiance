@@ -15,6 +15,7 @@
 #include <mesh/Sphere.h>
 #include <Camera.h>
 #include <Shader.h>
+#include <Grid.h>
 
 class Application {
     public:
@@ -55,6 +56,8 @@ class Application {
             glViewport(0, 0, fbWidth, fbHeight);
 
             glEnable(GL_DEPTH_TEST);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             IMGUI_CHECKVERSION();
             ImGui::CreateContext();
@@ -67,7 +70,9 @@ class Application {
             initializeFramebuffer();
 
             _shader = Shader("assets/shaders/baseShader.vs", "assets/shaders/litShader.fs");
+            _gridShader = Shader("assets/shaders/grid.vs", "assets/shaders/grid.fs");
             _camera = Camera(90.0f, _aspect, 0.1f, 100.0f);
+            _grid = std::make_unique<Grid>();
             _mesh = Mesh::Create<Sphere>();
         }
 
@@ -96,84 +101,12 @@ class Application {
                 _camera.handleLook(_lookDelta);
                 _lookDelta = {0.0f, 0.0f};
 
-                ImGui_ImplOpenGL3_NewFrame();
-                ImGui_ImplGlfw_NewFrame();
-                ImGui::NewFrame();
-
-                if (ImGui::BeginMainMenuBar()) {
-                    if (ImGui::BeginMenu("Scene")) {
-                        ImGui::MenuItem("New scene");
-                        ImGui::MenuItem("Load scene");
-                        ImGui::MenuItem("Save scene");
-                        ImGui::EndMenu();
-                    }
-                    if (ImGui::BeginMenu("Add")) {
-                        if (ImGui::BeginMenu("Mesh")) {
-                            ImGui::MenuItem("Sphere");
-                            ImGui::MenuItem("Plane");
-                            ImGui::EndMenu();
-                        }
-                        if (ImGui::BeginMenu("Light")) {
-                            ImGui::EndMenu();
-                        }
-                        ImGui::EndMenu();
-                    }
-                    ImGui::MenuItem("Render");
-                    ImGui::MenuItem("Help");
-                    ImGui::EndMainMenuBar();
-                }
-
-                float menuBarHeight = ImGui::GetFrameHeight();
-                float leftWidth = _width - 200.0f;
-                float rightWidth = _width - leftWidth;
-                float panelHeight = _height - menuBarHeight;
-                float topHeight = panelHeight * 0.4f;
-
-                ImGui::SetNextWindowPos(ImVec2(0, menuBarHeight));
-                ImGui::SetNextWindowSize(ImVec2(leftWidth, panelHeight));
-                ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-
-                ImVec2 viewportSize = ImGui::GetContentRegionAvail();
-                float textureWidth = viewportSize.x;
-                float textureHeight = textureWidth / _aspect;
-                if (textureHeight > viewportSize.y) {
-                    textureHeight = viewportSize.y;
-                    textureWidth = textureHeight * _aspect;
-                }
-
-                resizeFramebuffer(textureWidth, textureHeight);
-
-                ImVec2 cursor = ImGui::GetCursorPos();
-                ImVec2 offset = {
-                    (viewportSize.x - textureWidth) * 0.5f,
-                    (viewportSize.y - textureHeight) * 0.5f
-                };
-                ImGui::SetCursorPos({cursor.x + offset.x, cursor.y + offset.y});
-
-                ImGui::Image((ImTextureID)(intptr_t)_viewportTexture, ImVec2(textureWidth, textureHeight), ImVec2(0, 1), ImVec2(1, 0));
-
-                ImGui::End();
-
-                ImGui::SetNextWindowPos(ImVec2(leftWidth, menuBarHeight));
-                ImGui::SetNextWindowSize(ImVec2(rightWidth, topHeight));
-                ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-                ImGui::End();
-
-                ImGui::SetNextWindowPos(ImVec2(leftWidth, menuBarHeight + topHeight));
-                ImGui::SetNextWindowSize(ImVec2(rightWidth, panelHeight - topHeight));
-                ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-                ImGui::End();
-
-                ImGui::Render();
-                ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
                 glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 
-                glViewport(0, 0, (int)textureWidth, (int)textureHeight);
+                glViewport(0, 0, (int)_textureWidth, (int)_textureHeight);
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                _shader.use();
                 _shader.setMat4("view", _camera.getViewMatrix());
                 _shader.setMat4("projection", _camera.getProjectionMatrix());
 
@@ -182,9 +115,15 @@ class Application {
                 _shader.setVec3("lightPos", {0.0f, 1.0f, 2.0f});
                 _shader.setVec3("viewPos", {0.0f, 0.0f, 3.0f});
 
-                _mesh->render(_shader);
+                _gridShader.setMat4("view", _camera.getViewMatrix());
+                _gridShader.setMat4("projection", _camera.getProjectionMatrix());
+
+                _grid->render(_gridShader);
+                //_mesh->render(_shader);
 
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+                renderUI();
                 
                 glfwSwapBuffers(_window);
             }
@@ -200,9 +139,13 @@ class Application {
         unsigned int _FBO, _RBO;
         unsigned int _viewportTexture;
 
+        int _textureWidth, _textureHeight;
+
         Shader _shader;
+        Shader _gridShader;
         Camera _camera;
         std::unique_ptr<Mesh> _mesh;
+        std::unique_ptr<Grid> _grid;
 
         glm::vec2 _moveVector;
         glm::vec2 _lookDelta{0.0f};
@@ -218,7 +161,7 @@ class Application {
             glGenTextures(1, &_viewportTexture);
             glGenRenderbuffers(1, &_RBO);
 
-            resizeFramebuffer(800, 600);
+            resizeFramebuffer(1000, 600);
                      
             if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
                 throw std::runtime_error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
@@ -283,6 +226,78 @@ class Application {
 
             if (glm::length(moveVector) > 1.0f)
                 moveVector = glm::normalize(moveVector);
+        }
+
+        void renderUI() {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            if (ImGui::BeginMainMenuBar()) {
+                if (ImGui::BeginMenu("Scene")) {
+                    ImGui::MenuItem("New scene");
+                    ImGui::MenuItem("Load scene");
+                    ImGui::MenuItem("Save scene");
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Add")) {
+                    if (ImGui::BeginMenu("Mesh")) {
+                        ImGui::MenuItem("Sphere");
+                        ImGui::MenuItem("Plane");
+                        ImGui::EndMenu();
+                    }
+                    if (ImGui::BeginMenu("Light")) {
+                        ImGui::EndMenu();
+                    }
+                    ImGui::EndMenu();
+                }
+                ImGui::MenuItem("Render");
+                ImGui::MenuItem("Help");
+                ImGui::EndMainMenuBar();
+            }
+
+            float menuBarHeight = ImGui::GetFrameHeight();
+            float leftWidth = _width - 200.0f;
+            float rightWidth = _width - leftWidth;
+            float panelHeight = _height - menuBarHeight;
+            float topHeight = panelHeight * 0.4f;
+
+            ImGui::SetNextWindowPos(ImVec2(0, menuBarHeight));
+            ImGui::SetNextWindowSize(ImVec2(leftWidth, panelHeight));
+            ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
+            ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+            _textureWidth = viewportSize.x;
+            _textureHeight = _textureWidth / _aspect;
+            if (_textureHeight > viewportSize.y) {
+                _textureHeight = viewportSize.y;
+                _textureWidth = _textureHeight * _aspect;
+            }
+            resizeFramebuffer(_textureWidth, _textureHeight);
+
+            ImVec2 cursor = ImGui::GetCursorPos();
+            ImVec2 offset = {
+                (viewportSize.x - _textureWidth) * 0.5f,
+                (viewportSize.y - _textureHeight) * 0.5f
+            };
+            ImGui::SetCursorPos({cursor.x + offset.x, cursor.y + offset.y});
+
+            ImGui::Image((ImTextureID)(intptr_t)_viewportTexture, ImVec2(_textureWidth, _textureHeight), ImVec2(0, 1), ImVec2(1, 0));
+
+            ImGui::End();
+
+            ImGui::SetNextWindowPos(ImVec2(leftWidth, menuBarHeight));
+            ImGui::SetNextWindowSize(ImVec2(rightWidth, topHeight));
+            ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+            ImGui::End();
+
+            ImGui::SetNextWindowPos(ImVec2(leftWidth, menuBarHeight + topHeight));
+            ImGui::SetNextWindowSize(ImVec2(rightWidth, panelHeight - topHeight));
+            ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+            ImGui::End();
+
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }
 };
 

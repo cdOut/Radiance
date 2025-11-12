@@ -8,11 +8,13 @@
 class Camera : public Entity {
     public:
         Camera() : fov(45.0f), aspect(16.0f/9.0f), nearPlane(0.1f), farPlane(100.0f) {
+            setDefaultTransform();
             calculateVectors();
         }
         
         Camera(float fov, float aspect, float nearPlane, float farPlane) 
         : fov(fov), aspect(aspect), nearPlane(nearPlane), farPlane(farPlane) {
+            setDefaultTransform();
             calculateVectors();
         }
 
@@ -49,6 +51,11 @@ class Camera : public Entity {
         glm::vec3 forward {0.0f, 0.0f, -1.0f};
         glm::vec3 right {1.0f, 0.0f, 0.0f};
         glm::vec3 up {0.0f, 1.0f, 0.0f};
+
+        void setDefaultTransform() {
+            transform.position = glm::vec3(-2.0f, 2.0f, 2.0f);
+            transform.rotation = glm::vec3(-45.0f, -45.0f, 0.0f);
+        }
 
         void calculateVectors() {
             glm::vec3 direction;
