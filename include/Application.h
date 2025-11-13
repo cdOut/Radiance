@@ -70,6 +70,8 @@ class Application {
 
             _scene = std::make_unique<Scene>();
 
+            glGetIntegerv(GL_MAX_SAMPLES, &_samples);
+
             initializeFramebuffer();
         }
 
@@ -128,14 +130,14 @@ class Application {
         unsigned int _MSAAFBO, _MSAAColor, _MSAADepth;
         unsigned int _viewportTexture;
         ImVec2 _viewportSize, _lastViewportSize;
-        int _samples = 16;
+        int _samples;
 
         glm::vec2 _moveVector;
         glm::vec2 _lookDelta{0.0f};
         glm::vec2 _lastMousePos{0.0f};
         bool _firstMouse = true;
-        bool _isViewportHovered;
-        bool _isRightButtonDown;
+        bool _isViewportHovered = false;
+        bool _isRightButtonDown = false;
 
         float _lastTime = 0.0f;
 
@@ -168,7 +170,7 @@ class Application {
             glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 
             glBindTexture(GL_TEXTURE_2D, _viewportTexture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glBindTexture(GL_TEXTURE_2D, 0);
@@ -186,7 +188,7 @@ class Application {
             glBindFramebuffer(GL_FRAMEBUFFER, _MSAAFBO);
 
             glBindRenderbuffer(GL_RENDERBUFFER, _MSAAColor);
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, _samples, GL_RGB8, width, height);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, _samples, GL_RGBA8, width, height);
             glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, _MSAAColor);
 
             glBindRenderbuffer(GL_RENDERBUFFER, _MSAADepth);
@@ -210,6 +212,8 @@ class Application {
         static void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
             auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
 
+            if (!app->_isRightButtonDown) return;
+
             if (app->_firstMouse) {
                 app->_lastMousePos = {xpos, ypos};
                 app->_firstMouse = false;
@@ -228,6 +232,7 @@ class Application {
             if (button == GLFW_MOUSE_BUTTON_RIGHT) {
                 if (action == GLFW_PRESS && app->_isViewportHovered) {
                     app->_isRightButtonDown = true;
+                    app->_firstMouse = true;
                     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                 } else if (action == GLFW_RELEASE) {
                     app->_isRightButtonDown = false;
@@ -388,6 +393,11 @@ class Application {
                     ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.1f);
                     ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.1f);
                     ImGui::DragFloat3("Scale",    glm::value_ptr(transform.scale),    0.1f);
+                }
+
+                ImGui::Separator();
+                if (ImGui::Button("Delete Entity", ImVec2(-FLT_MIN, 0))) {
+                    _scene->removeEntity(selected);
                 }
             }
 

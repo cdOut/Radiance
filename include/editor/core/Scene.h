@@ -65,6 +65,21 @@ class Scene {
             return raw;
         }
 
+        void removeEntity(Entity* entity) {
+            if (!entity) return;
+
+            auto it = std::remove_if(_entities.begin(), _entities.end(), 
+                [entity](const std::unique_ptr<Entity>& e) { return e.get() == entity; }
+            );
+
+            if (it != _entities.end()) {
+                _entities.erase(it, _entities.end());
+            }
+
+            if (_selected == entity)
+                _selected = nullptr;
+        }
+
         std::string generateUniqueName(const std::string& name) {
             std::string base = name;
             if (isNumbered(name))

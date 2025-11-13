@@ -34,7 +34,7 @@ class Mesh : public Entity {
             if (_EBO) glDeleteBuffers(1, &_EBO);
         }
 
-        virtual void render() {
+        virtual void render() override {
             if (!_shader) return;
 
             glm::mat4 model = getModelMatrix();
