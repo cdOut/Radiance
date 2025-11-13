@@ -37,6 +37,7 @@ class Scene {
 
             _gridShader->setViewProjection(view, projection);
             _meshShader->setViewProjection(view, projection);
+            _outlineShader->setViewProjection(view, projection);
 
             for (auto& e : _entities)
                 e->render();
@@ -58,6 +59,7 @@ class Scene {
             T* raw = obj.get();
             if (std::is_base_of<Mesh, T>::value) {
                 raw->setShader(_meshShader.get());
+                raw->setSelectedShader(_outlineShader.get());
             }
             _entities.push_back(std::move(obj));
             return raw;
@@ -112,16 +114,21 @@ class Scene {
 
         std::unique_ptr<Shader> _gridShader;
         std::unique_ptr<Shader> _meshShader;
+        std::unique_ptr<Shader> _outlineShader;
 
         void initialize() {
             _gridShader = std::make_unique<Shader>("assets/shaders/grid.vs", "assets/shaders/grid.fs");
-            _meshShader = std::make_unique<Shader>("assets/shaders/baseShader.vs", "assets/shaders/litShader.fs");
+            _meshShader = std::make_unique<Shader>("assets/shaders/default.vs", "assets/shaders/lit.fs");
+            _outlineShader = std::make_unique<Shader>("assets/shaders/default.vs", "assets/shaders/unlit.fs");
 
             _meshShader->use();
             _meshShader->setVec3("color", {1.0f, 0.5f, 0.31f});
             _meshShader->setVec3("lightColor", {1.0f, 1.0f, 1.0f});
             _meshShader->setVec3("lightPos", {0.0f, 1.0f, 2.0f});
             _meshShader->setVec3("viewPos", {0.0f, 0.0f, 3.0f});
+
+            _outlineShader->use();
+            _outlineShader->setVec3("color", {1.0f, 1.0f, 1.0f});
 
             _camera = createEntity<Camera>();
             _grid = createEntity<Grid>();   

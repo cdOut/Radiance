@@ -36,10 +36,36 @@ class Mesh : public Entity {
 
         virtual void render() {
             if (!_shader) return;
-            _shader->use();
 
             glm::mat4 model = getModelMatrix();
             glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
+
+            if (_isSelected && _selectedShader) {
+                glEnable(GL_CULL_FACE);
+                glCullFace(GL_BACK);
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                glLineWidth(3.0f);
+                glDepthMask(GL_FALSE);
+
+                _selectedShader->use();
+                _selectedShader->setMat4("model", model);
+                _selectedShader->setMat3("normalMatrix", normalMatrix);
+
+                glBindVertexArray(_VAO);
+                if (!_indices.empty()) {
+                    glDrawElements(GL_TRIANGLES, (GLsizei)_indices.size(), GL_UNSIGNED_INT, 0);
+                } else {
+                    glDrawArrays(GL_TRIANGLES, 0, (GLsizei)(_vertices.size() / _floatsPerVert));
+                }
+                glBindVertexArray(0);
+
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                glDisable(GL_CULL_FACE);
+                glLineWidth(1.0f);
+                glDepthMask(GL_TRUE);
+            }
+
+            _shader->use();
 
             _shader->setMat4("model", model);
             _shader->setMat3("normalMatrix", normalMatrix);

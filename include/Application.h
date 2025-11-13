@@ -240,8 +240,13 @@ class Application {
 
                         for (const auto& primitive : primitiveList) {
                             if (ImGui::MenuItem(primitive.name)) {
+                                Entity* selected = _scene->getSelectedEntity();
+                                if (selected)
+                                    selected->setIsSelected(false);
+
                                 Entity* entity = primitive.create(_scene.get());
                                 _scene.get()->setSelectedEntity(entity);
+                                entity->setIsSelected(true);
                                 entity->setName(_scene->generateUniqueName(primitive.name));
                             }
                         }
@@ -312,7 +317,12 @@ class Application {
 
                 bool isSelected = (e.get() == _scene->getSelectedEntity());
                 if (ImGui::Selectable(e->getName().c_str(), isSelected)) {
+                    Entity* selected = _scene->getSelectedEntity();
+                    if (selected)
+                        selected->setIsSelected(false);
+                    
                     _scene->setSelectedEntity(e.get());
+                    e.get()->setIsSelected(true);
                 }
             }
 
@@ -352,6 +362,8 @@ class Application {
             }
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered()) {
+                if (selected)
+                    selected->setIsSelected(false);
                 _scene->setSelectedEntity(nullptr);
             }
 

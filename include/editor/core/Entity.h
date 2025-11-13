@@ -34,13 +34,17 @@ class Entity {
         Transform& getTransform() { return _transform; }
         const Transform& getTransform() const { return _transform; }
         const std::string& getName() const { return _name; }
+        const bool getIsSelected() const { return _isSelected; }
         void setName(const std::string& name) { _name = name; }
-
         void setShader(Shader* shader) { _shader = shader; }
+        void setSelectedShader(Shader* selectedShader) { _selectedShader = selectedShader; }
+        void setIsSelected(bool isSelected) { _isSelected = isSelected; }
     protected:
         Transform _transform;
         std::string _name;
         Shader* _shader = nullptr;
+        Shader* _selectedShader = nullptr;
+        bool _isSelected = true;
 
         virtual void initializeCreate() {}
         
