@@ -43,6 +43,14 @@ class Scene {
         }
 
         Camera* getCamera() const { return _camera; }
+        Grid* getGrid() const { return _grid; }
+
+        const std::vector<std::unique_ptr<Entity>>& getEntities() const {
+            return _entities;
+        }
+
+        void setSelectedEntity(Entity* e) { _selected = e; }
+        Entity* getSelectedEntity() const { return _selected; }
 
         template<typename T, typename... Args>
         T* createEntity(Args&&... args) {
@@ -54,8 +62,51 @@ class Scene {
             _entities.push_back(std::move(obj));
             return raw;
         }
+
+        std::string generateUniqueName(const std::string& name) {
+            std::string base = name;
+            if (isNumbered(name))
+                base = name.substr(0, name.size() - 4);
+
+            int index = 0;
+
+            for (const auto& e : _entities) {
+                std::string n = e->getName();
+
+                if (n.rfind(base, 0) == 0) {
+                    if (n.size() == base.size() + 4 && n[base.size()] == '.') {
+                        std::string numberStr = n.substr(base.size() + 1);
+                        if (numberStr.size() == 3 && std::isdigit(numberStr[0]) && std::isdigit(numberStr[1]) && std::isdigit(numberStr[2])) {
+                            int number = std::stoi(numberStr);
+                            if (number > index)
+                                index = number;
+                        }
+                    }
+                }
+            }
+
+            char unique[64];
+            std::snprintf(unique, sizeof(unique), "%s.%03d", base.c_str(), index + 1);
+            return std::string(unique);
+        }
+
+        bool isNameTaken(const std::string& name) const {
+            for (const auto& e : _entities) {
+                if (e->getName() == name)
+                    return true;
+            }
+            return false;
+        }
+
+        bool isNumbered(const std::string& name) const {
+            if (name.size() < 4) return false;
+            if (name[name.size() - 4] != '.') return false;
+
+            return std::isdigit(name[name.size() - 3]) && std::isdigit(name[name.size() - 2]) && std::isdigit(name[name.size() - 1]);
+        }
     private:
         std::vector<std::unique_ptr<Entity>> _entities;
+        Entity* _selected;
         Camera* _camera;
         Grid* _grid;
 

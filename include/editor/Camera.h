@@ -13,7 +13,7 @@ class Camera : public Entity {
         }
 
         glm::mat4 getViewMatrix() const {
-            return glm::lookAt(transform.position, transform.position + _forward, _up);
+            return glm::lookAt(_transform.position, _transform.position + _forward, _up);
         }
 
         glm::mat4 getProjectionMatrix() const {
@@ -21,15 +21,15 @@ class Camera : public Entity {
         }
 
         void handleMove(const glm::vec2& moveVector, const float& deltaTime) {
-            transform.position += moveVector.x * _right * _cameraSpeed * deltaTime;
-            transform.position += moveVector.y * _forward * _cameraSpeed * deltaTime;
+            _transform.position += moveVector.x * _right * _cameraSpeed * deltaTime;
+            _transform.position += moveVector.y * _forward * _cameraSpeed * deltaTime;
         }
 
         void handleLook(const glm::vec2& lookDeltaVector) {
-            transform.rotation.x += lookDeltaVector.y * _cameraSensitivity;
-            transform.rotation.y += lookDeltaVector.x * _cameraSensitivity;
+            _transform.rotation.x += lookDeltaVector.y * _cameraSensitivity;
+            _transform.rotation.y += lookDeltaVector.x * _cameraSensitivity;
 
-            transform.rotation.x = glm::clamp(transform.rotation.x, -89.0f, 89.0f);
+            _transform.rotation.x = glm::clamp(_transform.rotation.x, -89.0f, 89.0f);
 
             calculateVectors();
         }
@@ -51,15 +51,15 @@ class Camera : public Entity {
         glm::vec3 _up {0.0f, 1.0f, 0.0f};
 
         void setDefaultTransform() {
-            transform.position = glm::vec3(-2.0f, 2.0f, 2.0f);
-            transform.rotation = glm::vec3(-45.0f, -45.0f, 0.0f);
+            _transform.position = glm::vec3(-2.0f, 2.0f, 2.0f);
+            _transform.rotation = glm::vec3(-45.0f, -45.0f, 0.0f);
         }
 
         void calculateVectors() {
             glm::vec3 direction;
-            direction.x = cosf(glm::radians(transform.rotation.y)) * cosf(glm::radians(transform.rotation.x));
-            direction.y = sinf(glm::radians(transform.rotation.x));
-            direction.z = sinf(glm::radians(transform.rotation.y)) * cosf(glm::radians(transform.rotation.x));
+            direction.x = cosf(glm::radians(_transform.rotation.y)) * cosf(glm::radians(_transform.rotation.x));
+            direction.y = sinf(glm::radians(_transform.rotation.x));
+            direction.z = sinf(glm::radians(_transform.rotation.y)) * cosf(glm::radians(_transform.rotation.x));
 
             _forward = glm::normalize(direction);
             _right = glm::normalize(glm::cross(_forward, glm::vec3(0.0f, 1.0f, 0.0f)));

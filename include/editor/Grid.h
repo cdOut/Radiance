@@ -31,7 +31,7 @@ class Grid : public Entity {
         }
 
         void handleCameraPos(const glm::vec3& cameraPos) {
-            transform.position = glm::vec3(glm::floor(cameraPos.x), 0.0f, glm::floor(cameraPos.z));
+            _transform.position = glm::vec3(glm::floor(cameraPos.x), 0.0f, glm::floor(cameraPos.z));
         }
 
         void render() {

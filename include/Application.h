@@ -14,6 +14,7 @@
 #include <memory>
 #include "editor/core/Scene.h"
 #include "editor/mesh/primitives/Sphere.h"
+#include "editor/mesh/primitives/Primitive.h"
 
 class Application {
     public:
@@ -236,10 +237,15 @@ class Application {
                 }
                 if (ImGui::BeginMenu("Add")) {
                     if (ImGui::BeginMenu("Mesh")) {
-                        if (ImGui::MenuItem("Sphere")) {
-                            _scene->createEntity<Sphere>();
+
+                        for (const auto& primitive : primitiveList) {
+                            if (ImGui::MenuItem(primitive.name)) {
+                                Entity* entity = primitive.create(_scene.get());
+                                _scene.get()->setSelectedEntity(entity);
+                                entity->setName(_scene->generateUniqueName(primitive.name));
+                            }
                         }
-                        ImGui::MenuItem("Plane");
+
                         ImGui::EndMenu();
                     }
                     if (ImGui::BeginMenu("Light")) {
@@ -253,7 +259,7 @@ class Application {
             }
 
             float menuBarHeight = ImGui::GetFrameHeight();
-            float leftWidth = _width - 200.0f;
+            float leftWidth = _width - 250.0f;
             float rightWidth = _width - leftWidth;
             float panelHeight = _height - menuBarHeight;
             float topHeight = panelHeight * 0.4f;
@@ -299,11 +305,56 @@ class Application {
             ImGui::SetNextWindowPos(ImVec2(leftWidth, menuBarHeight));
             ImGui::SetNextWindowSize(ImVec2(rightWidth, topHeight));
             ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
+            for (auto& e : _scene->getEntities()) {
+                if (e.get() == _scene->getCamera()) continue;
+                if (e.get() == _scene->getGrid()) continue;
+
+                bool isSelected = (e.get() == _scene->getSelectedEntity());
+                if (ImGui::Selectable(e->getName().c_str(), isSelected)) {
+                    _scene->setSelectedEntity(e.get());
+                }
+            }
+
             ImGui::End();
 
             ImGui::SetNextWindowPos(ImVec2(leftWidth, menuBarHeight + topHeight));
             ImGui::SetNextWindowSize(ImVec2(rightWidth, panelHeight - topHeight));
             ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
+            Entity* selected = _scene->getSelectedEntity();
+            if (selected) {
+                char nameBuffer[64];
+                std::strncpy(nameBuffer, selected->getName().c_str(), sizeof(nameBuffer));
+
+                if (ImGui::CollapsingHeader("Name", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    ImGui::PushItemWidth(-1);
+                    if (ImGui::InputText("##Name", nameBuffer, sizeof(nameBuffer), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
+                    {
+                        std::string name = nameBuffer;
+                        if (nameBuffer != selected->getName() && _scene->isNameTaken(nameBuffer)) {
+                            name = _scene->generateUniqueName(nameBuffer);
+                        }
+
+                        if (std::strlen(nameBuffer) > 0)
+                            selected->setName(name);
+                    }
+                    ImGui::PopItemWidth();
+                }
+
+                Transform& transform = selected->getTransform();
+
+                if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.1f);
+                    ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.1f);
+                    ImGui::DragFloat3("Scale",    glm::value_ptr(transform.scale),    0.1f);
+                }
+            }
+
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered()) {
+                _scene->setSelectedEntity(nullptr);
+            }
+
             ImGui::End();
 
             ImGui::Render();

@@ -7,6 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <string>
 #include "Shader.h"
 
 struct Transform {
@@ -30,24 +31,28 @@ class Entity {
 
         virtual void render() {}
 
-        const Transform& getTransform() const { return transform; }
+        Transform& getTransform() { return _transform; }
+        const Transform& getTransform() const { return _transform; }
+        const std::string& getName() const { return _name; }
+        void setName(const std::string& name) { _name = name; }
 
         void setShader(Shader* shader) { _shader = shader; }
     protected:
-        Transform transform;
+        Transform _transform;
+        std::string _name;
         Shader* _shader = nullptr;
 
         virtual void initializeCreate() {}
         
         virtual glm::mat4 getModelMatrix() const {
-            glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), transform.position);
+            glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), _transform.position);
             glm::quat rotationQuat = glm::quat(glm::yawPitchRoll(
-                glm::radians(transform.rotation.y),
-                glm::radians(transform.rotation.x),
-                glm::radians(transform.rotation.z)
+                glm::radians(_transform.rotation.y),
+                glm::radians(_transform.rotation.x),
+                glm::radians(_transform.rotation.z)
             ));
             glm::mat4 rotationMat = glm::toMat4(rotationQuat);
-            glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), transform.scale);
+            glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), _transform.scale);
             return translationMat * rotationMat * scaleMat;
         }
 };
