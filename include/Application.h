@@ -97,13 +97,17 @@ class Application {
                 _scene->update(deltaTime, _moveVector, _lookDelta, _isRightButtonDown);
                 _lookDelta = {0.0f, 0.0f};
 
-                glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
+                glBindFramebuffer(GL_FRAMEBUFFER, _MSAAFBO);
 
                 glViewport(0, 0, (int)_viewportSize.x, (int)_viewportSize.y);
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 _scene->render(deltaTime);
+
+                glBindFramebuffer(GL_READ_FRAMEBUFFER, _MSAAFBO);
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _FBO);
+                glBlitFramebuffer(0, 0, _viewportSize.x, _viewportSize.y, 0, 0, _viewportSize.x, _viewportSize.y, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -121,8 +125,10 @@ class Application {
         float _aspect = 16.0f / 9.0f;
 
         unsigned int _FBO, _RBO;
+        unsigned int _MSAAFBO, _MSAAColor, _MSAADepth;
         unsigned int _viewportTexture;
         ImVec2 _viewportSize, _lastViewportSize;
+        int _samples = 16;
 
         glm::vec2 _moveVector;
         glm::vec2 _lookDelta{0.0f};
@@ -143,6 +149,14 @@ class Application {
             glGenRenderbuffers(1, &_RBO);
 
             resizeFramebuffer(800, 600);
+
+            glGenFramebuffers(1, &_MSAAFBO);
+            glBindFramebuffer(GL_FRAMEBUFFER, _MSAAFBO);
+
+            glGenRenderbuffers(1, &_MSAAColor);
+            glGenRenderbuffers(1, &_MSAADepth);
+
+            resizeMSAAFramebuffer(800, 600);
                      
             if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
                 throw std::runtime_error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
@@ -165,6 +179,21 @@ class Application {
             glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _RBO);
             glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        void resizeMSAAFramebuffer(int width, int height) {
+            glBindFramebuffer(GL_FRAMEBUFFER, _MSAAFBO);
+
+            glBindRenderbuffer(GL_RENDERBUFFER, _MSAAColor);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, _samples, GL_RGB8, width, height);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, _MSAAColor);
+
+            glBindRenderbuffer(GL_RENDERBUFFER, _MSAADepth);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, _samples, GL_DEPTH24_STENCIL8, width, height);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _MSAADepth);
+
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
@@ -276,6 +305,7 @@ class Application {
             _viewportSize = ImGui::GetContentRegionAvail();
             if (_viewportSize.x != _lastViewportSize.x || _viewportSize.y != _lastViewportSize.y) {
                 resizeFramebuffer(_viewportSize.x, _viewportSize.y);
+                resizeMSAAFramebuffer(_viewportSize.x, _viewportSize.y);
                 _lastViewportSize = _viewportSize;
 
                 _scene->getCamera()->setAspect(_viewportSize.x / _viewportSize.y);
