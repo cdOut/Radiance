@@ -31,6 +31,10 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(imgui)
 
+# stb_image
+add_library(stb_image ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image/src/stb_image.cpp)
+target_include_directories(stb_image PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image/include)
+
 add_library(imgui
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
@@ -49,6 +53,6 @@ target_link_libraries(imgui PUBLIC glfw glad)
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_executable(raycast-thesis ${SRC_FILES})
 target_include_directories(raycast-thesis PRIVATE include)
-target_link_libraries(raycast-thesis PRIVATE imgui glm)
+target_link_libraries(raycast-thesis PRIVATE imgui glm stb_image)
 
 file(COPY assets/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets)

@@ -6,7 +6,9 @@
 #include "Entity.h"
 #include "../Camera.h"
 #include "../Grid.h"
+#include "Light.h"
 #include "../mesh/Mesh.h"
+#include <algorithm>
 
 class Scene {
     public:
@@ -35,9 +37,14 @@ class Scene {
             glm::mat4 view = _camera->getViewMatrix();
             glm::mat4 projection = _camera->getProjectionMatrix();
 
+            _meshShader->use();
+            _meshShader->setVec3("viewPos", _camera->getTransform().position);
+
             _gridShader->setViewProjection(view, projection);
             _meshShader->setViewProjection(view, projection);
             _outlineShader->setViewProjection(view, projection);
+
+            sendLightsDataToShader(_meshShader.get());
 
             for (auto& e : _entities)
                 e->render();
@@ -57,9 +64,11 @@ class Scene {
         T* createEntity(Args&&... args) {
             auto obj = Entity::Create<T>(std::forward<Args>(args)...);
             T* raw = obj.get();
-            if (std::is_base_of<Mesh, T>::value) {
+            if constexpr (std::is_base_of_v<Mesh, T>) {
                 raw->setShader(_meshShader.get());
                 raw->setSelectedShader(_outlineShader.get());
+            } else if constexpr (std::is_base_of_v<Light, T>) {
+                _lights.push_back(raw);
             }
             _entities.push_back(std::move(obj));
             return raw;
@@ -67,6 +76,11 @@ class Scene {
 
         void removeEntity(Entity* entity) {
             if (!entity) return;
+
+            if (auto light = dynamic_cast<Light*>(entity)) {
+                auto it = std::remove(_lights.begin(), _lights.end(), light);
+                _lights.erase(it, _lights.end());
+            }
 
             auto it = std::remove_if(_entities.begin(), _entities.end(), 
                 [entity](const std::unique_ptr<Entity>& e) { return e.get() == entity; }
@@ -123,6 +137,7 @@ class Scene {
         }
     private:
         std::vector<std::unique_ptr<Entity>> _entities;
+        std::vector<Light*> _lights;
         Entity* _selected;
         Camera* _camera;
         Grid* _grid;
@@ -137,10 +152,16 @@ class Scene {
             _outlineShader = std::make_unique<Shader>("assets/shaders/default.vs", "assets/shaders/unlit.fs");
 
             _meshShader->use();
-            _meshShader->setVec3("color", {1.0f, 0.5f, 0.31f});
-            _meshShader->setVec3("lightColor", {1.0f, 1.0f, 1.0f});
-            _meshShader->setVec3("lightPos", {0.0f, 1.0f, 2.0f});
-            _meshShader->setVec3("viewPos", {0.0f, 0.0f, 3.0f});
+
+            _meshShader->setVec3("light.direction", {-0.2f, -1.0f, -0.3f});
+            _meshShader->setVec3("light.ambient", {0.2f, 0.2f, 0.2f});
+            _meshShader->setVec3("light.diffuse", {0.5f, 0.5f, 0.5f});
+            _meshShader->setVec3("light.specular", {1.0f, 1.0f, 1.0f});
+
+            _meshShader->setVec3("material.ambient", {1.0f, 0.5f, 0.31f});
+            _meshShader->setVec3("material.diffuse", {1.0f, 0.5f, 0.31f});
+            _meshShader->setVec3("material.specular", {0.5f, 0.5f, 0.5f});
+            _meshShader->setFloat("material.shininess", 32.0f);
 
             _outlineShader->use();
             _outlineShader->setVec3("color", {1.0f, 1.0f, 1.0f});
@@ -148,6 +169,10 @@ class Scene {
             _camera = createEntity<Camera>();
             _grid = createEntity<Grid>();   
             _grid->setShader(_gridShader.get());
+        }
+
+        void sendLightsDataToShader(Shader* shader) {
+
         }
 };
 
