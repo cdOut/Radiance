@@ -55,8 +55,7 @@ class Billboard {
 
             _shader->setMat4("model", model);
 
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glDepthMask(GL_FALSE);
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, _texture);
@@ -65,7 +64,7 @@ class Billboard {
             glDrawElements(GL_TRIANGLES, _indices.size(), GL_UNSIGNED_INT, 0);
             glBindVertexArray(0);
 
-            glDisable(GL_BLEND);
+            glDepthMask(GL_TRUE);
         }
 
         void setShader(Shader* shader) { _shader = shader; }
