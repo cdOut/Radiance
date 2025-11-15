@@ -3,12 +3,15 @@
 
 #include <vector>
 #include <memory>
+#include <algorithm>
+#include <type_traits>
+#include <stb_image.h>
+
 #include "Entity.h"
 #include "../Camera.h"
 #include "../Grid.h"
 #include "Light.h"
 #include "../mesh/Mesh.h"
-#include <algorithm>
 
 class Scene {
     public:
@@ -43,6 +46,7 @@ class Scene {
             _gridShader->setViewProjection(view, projection);
             _meshShader->setViewProjection(view, projection);
             _outlineShader->setViewProjection(view, projection);
+            _billboardShader->setViewProjection(view, projection);
 
             sendLightsDataToShader(_meshShader.get());
 
@@ -68,6 +72,8 @@ class Scene {
                 raw->setShader(_meshShader.get());
                 raw->setSelectedShader(_outlineShader.get());
             } else if constexpr (std::is_base_of_v<Light, T>) {
+                raw->setShader(_billboardShader.get());
+                raw->setTexture(_lightIcon);
                 _lights.push_back(raw);
             }
             _entities.push_back(std::move(obj));
@@ -145,11 +151,37 @@ class Scene {
         std::unique_ptr<Shader> _gridShader;
         std::unique_ptr<Shader> _meshShader;
         std::unique_ptr<Shader> _outlineShader;
+        std::unique_ptr<Shader> _billboardShader;
+
+        unsigned int _lightIcon;
+
+        unsigned int loadTexture(std::string path) {
+            unsigned int texture;
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            int width, height, nrChannels;
+            unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
+            if (data) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, (nrChannels == 4) ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, data);
+                glGenerateMipmap(GL_TEXTURE_2D);
+            } else {
+                std::cout << "Failed to load texture" << std::endl;
+            }
+            stbi_image_free(data);
+            return texture;
+        }
 
         void initialize() {
             _gridShader = std::make_unique<Shader>("assets/shaders/grid.vs", "assets/shaders/grid.fs");
             _meshShader = std::make_unique<Shader>("assets/shaders/default.vs", "assets/shaders/lit.fs");
             _outlineShader = std::make_unique<Shader>("assets/shaders/default.vs", "assets/shaders/unlit.fs");
+            _billboardShader = std::make_unique<Shader>("assets/shaders/billboard.vs", "assets/shaders/billboard.fs");
 
             _meshShader->use();
 
@@ -166,9 +198,14 @@ class Scene {
             _outlineShader->use();
             _outlineShader->setVec3("color", {1.0f, 1.0f, 1.0f});
 
+            _billboardShader->use();
+            _billboardShader->setInt("tex", 0);
+
             _camera = createEntity<Camera>();
             _grid = createEntity<Grid>();   
             _grid->setShader(_gridShader.get());
+
+            _lightIcon = loadTexture("assets/textures/container.jpg");
         }
 
         void sendLightsDataToShader(Shader* shader) {

@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <string>
 #include "Entity.h"
+#include "../Billboard.h"
 
 enum class LightType {
     Directional,
@@ -26,7 +27,22 @@ class Light : public Entity {
         Light(LightType type = LightType::Directional) : _type(type) {}
 
         const LightType& getType() const { return _type; }
+
+        void setTexture(unsigned int texture) {
+            _billboard.setTexture(texture);
+        }
+
+        void setShader(Shader* shader) {
+            _billboard.setShader(shader);
+        }
+
+        virtual void render() override {
+            glm::mat4 model = getModelMatrix();
+
+            _billboard.render(model);
+        }
     private:
+        Billboard _billboard;
         LightType _type;
 
         glm::vec3 ambient{0.0f};
