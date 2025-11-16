@@ -42,9 +42,13 @@ class Grid : public Entity {
 
             _shader->setMat4("model", model);
 
+            glDepthMask(GL_FALSE);
+
             glBindVertexArray(_VAO);
             glDrawArrays(GL_LINES, 0, _vertices.size() / _floatsPerVert);
             glBindVertexArray(0);
+
+            glDepthMask(GL_TRUE);
         }
     private:
         unsigned int _VAO, _VBO;

@@ -50,14 +50,53 @@ class Scene {
 
             sendLightsDataToShader(_meshShader.get());
 
-            for (auto& e : _entities)
-                e->render();
+            for (const auto& [_, e] : _entities) {
+                if (!dynamic_cast<Light*>(e.get()))
+                    e->render();
+            }
+
+            for (Light* light : _lights) {
+                light->render();
+            }
+        }
+
+        void renderGpuSelect() {
+            glm::mat4 view = _camera->getViewMatrix();
+            glm::mat4 projection = _camera->getProjectionMatrix();
+
+            _gpuSelectShader->setViewProjection(view, projection);
+            Shader* shader;
+
+            for (const auto& [_, e] : _entities) {
+                if (!dynamic_cast<Light*>(e.get())) {
+                    if (e.get() == _camera || e.get() == _grid)
+                        continue;
+
+                    _gpuSelectShader->setVec3("idColor", e->getIdColor());
+                    _gpuSelectShader->setInt("isBillboard", false);
+                    
+                    shader = e->getShader();
+                    e->setShader(_gpuSelectShader.get());
+                    e->render();
+                    e->setShader(shader);
+                }
+            }
+
+            for (Light* light : _lights) {
+                _gpuSelectShader->setVec3("idColor", light->getIdColor());
+                _gpuSelectShader->setInt("isBillboard", true);
+                
+                shader = light->getShader();
+                light->setShader(_gpuSelectShader.get());
+                light->render();
+                light->setShader(shader);
+            }
         }
 
         Camera* getCamera() const { return _camera; }
         Grid* getGrid() const { return _grid; }
 
-        const std::vector<std::unique_ptr<Entity>>& getEntities() const {
+        const std::unordered_map<int, std::unique_ptr<Entity>>& getEntities() const {
             return _entities;
         }
 
@@ -68,6 +107,10 @@ class Scene {
         T* createEntity(Args&&... args) {
             auto obj = Entity::Create<T>(std::forward<Args>(args)...);
             T* raw = obj.get();
+
+            int id = idVar++;
+            raw->setId(id);
+
             if constexpr (std::is_base_of_v<Mesh, T>) {
                 raw->setShader(_meshShader.get());
                 raw->setSelectedShader(_outlineShader.get());
@@ -76,7 +119,8 @@ class Scene {
                 raw->setTexture(_lightIcon);
                 _lights.push_back(raw);
             }
-            _entities.push_back(std::move(obj));
+
+            _entities[id] = std::move(obj);
             return raw;
         }
 
@@ -88,13 +132,8 @@ class Scene {
                 _lights.erase(it, _lights.end());
             }
 
-            auto it = std::remove_if(_entities.begin(), _entities.end(), 
-                [entity](const std::unique_ptr<Entity>& e) { return e.get() == entity; }
-            );
-
-            if (it != _entities.end()) {
-                _entities.erase(it, _entities.end());
-            }
+            int id = entity->getId();
+            _entities.erase(id);
 
             if (_selected == entity)
                 _selected = nullptr;
@@ -107,7 +146,7 @@ class Scene {
 
             int index = 0;
 
-            for (const auto& e : _entities) {
+            for (const auto& [_, e] : _entities) {
                 std::string n = e->getName();
 
                 if (n.rfind(base, 0) == 0) {
@@ -128,7 +167,7 @@ class Scene {
         }
 
         bool isNameTaken(const std::string& name) const {
-            for (const auto& e : _entities) {
+            for (const auto& [_, e] : _entities) {
                 if (e->getName() == name)
                     return true;
             }
@@ -142,16 +181,19 @@ class Scene {
             return std::isdigit(name[name.size() - 3]) && std::isdigit(name[name.size() - 2]) && std::isdigit(name[name.size() - 1]);
         }
     private:
-        std::vector<std::unique_ptr<Entity>> _entities;
+        std::unordered_map<int, std::unique_ptr<Entity>> _entities;
         std::vector<Light*> _lights;
         Entity* _selected;
         Camera* _camera;
         Grid* _grid;
 
+        unsigned int idVar = 0;
+
         std::unique_ptr<Shader> _gridShader;
         std::unique_ptr<Shader> _meshShader;
         std::unique_ptr<Shader> _outlineShader;
         std::unique_ptr<Shader> _billboardShader;
+        std::unique_ptr<Shader> _gpuSelectShader;
 
         unsigned int _lightIcon;
 
@@ -185,6 +227,7 @@ class Scene {
             _meshShader = std::make_unique<Shader>("assets/shaders/default.vs", "assets/shaders/lit.fs");
             _outlineShader = std::make_unique<Shader>("assets/shaders/default.vs", "assets/shaders/unlit.fs");
             _billboardShader = std::make_unique<Shader>("assets/shaders/billboard.vs", "assets/shaders/billboard.fs");
+            _gpuSelectShader = std::make_unique<Shader>("assets/shaders/gpuSelect.vs", "assets/shaders/gpuSelect.fs");
 
             _meshShader->use();
 

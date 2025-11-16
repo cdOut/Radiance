@@ -32,7 +32,8 @@ class Light : public Entity {
             _billboard.setTexture(texture);
         }
 
-        void setShader(Shader* shader) {
+        virtual void setShader(Shader* shader) override {
+            Entity::setShader(shader);
             _billboard.setShader(shader);
         }
 

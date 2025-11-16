@@ -114,6 +114,15 @@ class Application {
 
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+                glBindFramebuffer(GL_FRAMEBUFFER, _selectFBO);
+
+                glViewport(0, 0, (int)_viewportSize.x, (int)_viewportSize.y);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                _scene->renderGpuSelect();
+
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
                 renderUI();
                 
                 glfwSwapBuffers(_window);
@@ -130,8 +139,10 @@ class Application {
         unsigned int _FBO, _RBO;
         unsigned int _MSAAFBO, _MSAAColor, _MSAADepth;
         unsigned int _viewportTexture;
-        ImVec2 _viewportSize, _lastViewportSize;
+        ImVec2 _viewportSize, _lastViewportSize, _viewportPos;
         int _samples;
+
+        unsigned int _selectFBO, _selectColor, _selectDepth;
 
         glm::vec2 _moveVector;
         glm::vec2 _lookDelta{0.0f};
@@ -160,6 +171,14 @@ class Application {
             glGenRenderbuffers(1, &_MSAADepth);
 
             resizeMSAAFramebuffer(800, 600);
+
+            glGenFramebuffers(1, &_selectFBO);
+            glBindFramebuffer(GL_FRAMEBUFFER, _selectFBO);
+
+            glGenTextures(1, &_selectColor);
+            glGenRenderbuffers(1, &_selectDepth);
+
+            resizeSelectFramebuffer(800, 600);
                      
             if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
                 throw std::runtime_error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
@@ -171,7 +190,7 @@ class Application {
             glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 
             glBindTexture(GL_TEXTURE_2D, _viewportTexture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glBindTexture(GL_TEXTURE_2D, 0);
@@ -195,6 +214,27 @@ class Application {
             glBindRenderbuffer(GL_RENDERBUFFER, _MSAADepth);
             glRenderbufferStorageMultisample(GL_RENDERBUFFER, _samples, GL_DEPTH24_STENCIL8, width, height);
             glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _MSAADepth);
+
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        void resizeSelectFramebuffer(int width, int height) {
+            glBindFramebuffer(GL_FRAMEBUFFER, _selectFBO);
+
+            glBindTexture(GL_TEXTURE_2D, _selectColor);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _selectColor, 0);
+
+            glBindRenderbuffer(GL_RENDERBUFFER, _selectDepth);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _selectDepth);
+
+            glDrawBuffer(GL_COLOR_ATTACHMENT0);
+            glReadBuffer(GL_COLOR_ATTACHMENT0);
 
             glBindRenderbuffer(GL_RENDERBUFFER, 0);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -256,6 +296,36 @@ class Application {
 
             if (glm::length(moveVector) > 1.0f)
                 moveVector = glm::normalize(moveVector);
+
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && _isViewportHovered) {
+                ImVec2 mousePos = ImGui::GetMousePos();
+                ImVec2 localPos = {mousePos.x - _viewportPos.x, mousePos.y - _viewportPos.y};
+
+                if (localPos.x >= 0 && localPos.y >= 0 && localPos.x < _viewportSize.x && localPos.y < _viewportSize.y) {
+                    unsigned char pixel[4];
+
+                    glBindFramebuffer(GL_FRAMEBUFFER, _selectFBO);
+                    glReadPixels((int)localPos.x, (int)(_viewportSize.y - localPos.y), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+                    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+                    Entity* selected = nullptr, *lastSelected = nullptr;
+                    auto& entities = _scene->getEntities();
+
+                    unsigned int id =  (pixel[0]) | (pixel[1] << 8) | (pixel[2] << 16);
+
+                    if (!id)
+                        return;
+
+                    if (entities.find(id) != entities.end()) {
+                        if (_scene->getSelectedEntity())
+                            _scene->getSelectedEntity()->setIsSelected(false);
+
+                        if (entities.at(id).get())
+                            _scene->setSelectedEntity(entities.at(id).get());
+                            entities.at(id).get()->setIsSelected(true);
+                    }
+                }
+            }
         }
 
         void renderUI() {
@@ -325,12 +395,14 @@ class Application {
             if (_viewportSize.x != _lastViewportSize.x || _viewportSize.y != _lastViewportSize.y) {
                 resizeFramebuffer(_viewportSize.x, _viewportSize.y);
                 resizeMSAAFramebuffer(_viewportSize.x, _viewportSize.y);
+                resizeSelectFramebuffer(_viewportSize.x, _viewportSize.y);
                 _lastViewportSize = _viewportSize;
 
                 _scene->getCamera()->setAspect(_viewportSize.x / _viewportSize.y);
             }
 
             ImGui::Image((ImTextureID)(intptr_t)_viewportTexture, _viewportSize, ImVec2(0, 1), ImVec2(1, 0));
+            _viewportPos = ImGui::GetItemRectMin();
             _isViewportHovered = ImGui::IsItemHovered();
 
             ImVec2 imageMin = ImGui::GetItemRectMin();
@@ -360,7 +432,7 @@ class Application {
             ImGui::SetNextWindowSize(ImVec2(rightWidth, topHeight));
             ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
-            for (auto& e : _scene->getEntities()) {
+            for (const auto& [_, e] : _scene->getEntities()) {
                 if (e.get() == _scene->getCamera()) continue;
                 if (e.get() == _scene->getGrid()) continue;
 

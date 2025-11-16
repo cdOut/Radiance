@@ -35,11 +35,20 @@ class Entity {
         const Transform& getTransform() const { return _transform; }
         const std::string& getName() const { return _name; }
         const bool getIsSelected() const { return _isSelected; }
+        const unsigned int getId() const { return _id; }
+        const glm::vec3 getIdColor() const { return _idColor; }
+        Shader* getShader() { return _shader; }
         void setName(const std::string& name) { _name = name; }
-        void setShader(Shader* shader) { _shader = shader; }
+        virtual void setShader(Shader* shader) { _shader = shader; }
         void setSelectedShader(Shader* selectedShader) { _selectedShader = selectedShader; }
         void setIsSelected(bool isSelected) { _isSelected = isSelected; }
+        void setId(unsigned int id) { 
+            _id = id;
+            _idColor = {(id & 0xFF), ((id >> 8) & 0xFF), ((id >> 16) & 0xFF)};
+        }
     protected:
+        unsigned int _id = 0;
+        glm::vec3 _idColor{0.0f};
         Transform _transform;
         std::string _name;
         Shader* _shader = nullptr;
