@@ -44,7 +44,7 @@ class Mesh : public Entity {
                 glEnable(GL_CULL_FACE);
                 glCullFace(GL_BACK);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                glLineWidth(3.0f);
+                glLineWidth(4.0f);
                 glDepthMask(GL_FALSE);
 
                 _selectedShader->use();
