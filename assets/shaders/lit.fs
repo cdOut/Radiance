@@ -5,34 +5,22 @@ in vec3 Normal;
 
 out vec4 FragColor;
 
-struct Material {
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-    float shininess;
-};
-
 struct DirectionalLight {
+    vec3 color;
     vec3 direction;
-
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
 };
 
 struct PointLight {
+    vec3 color;
     vec3 position;
 
     float constant;
     float linear;
     float quadratic;
-
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
 };
 
 struct SpotLight {
+    vec3 color;
     vec3 position;
     vec3 direction;
 
@@ -41,14 +29,12 @@ struct SpotLight {
     float constant;
     float linear;
     float quadratic;
-
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
 };
 
 uniform vec3 viewPos;
-uniform Material material;
+uniform vec3 albedo;
+uniform float metallic;
+uniform float roughness;
 
 #define MAX_DIRECTIONAL_LIGHTS 4
 #define MAX_POINT_LIGHTS 32
@@ -62,86 +48,106 @@ uniform DirectionalLight directionalLights[MAX_DIRECTIONAL_LIGHTS];
 uniform PointLight pointLights[MAX_POINT_LIGHTS];
 uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 
-vec3 calculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir) {
-    vec3 lightDir = normalize(-light.direction);
+#define PI 3.14159265359
 
-    float diff = max(dot(normal, lightDir), 0.0);
-
-    vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-
-    vec3 ambient = light.ambient * material.ambient;
-    vec3 diffuse = light.diffuse * diff * material.diffuse;
-    vec3 specular = light.specular * spec * material.specular;
-
-    return ambient + diffuse + specular;
+float DistributionGGX(vec3 N, vec3 H, float a) {
+    float a2 = a * a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
+	
+    float nom = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+	
+    return nom / denom;
 }
 
-vec3 calculatePointLight(PointLight light, vec3 normal, vec3 viewDir, vec3 fragPos) {
-    vec3 lightDir = normalize(light.position - fragPos);
-
-    float diff = max(dot(normal, lightDir), 0.0);
-
-    vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-
-    float distance = length(light.position - fragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
-
-    vec3 ambient = light.ambient * material.ambient;
-    vec3 diffuse = light.diffuse * diff * material.diffuse;
-    vec3 specular = light.specular * spec * material.specular;
-
-    ambient *= attenuation;
-    diffuse *= attenuation;
-    specular *= attenuation;
-
-    return ambient + diffuse + specular;
+float GeometrySchlickGGX(float NdotV, float k) {
+    float nom = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+	
+    return nom / denom;
+}
+  
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float k) {
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx1 = GeometrySchlickGGX(NdotV, k);
+    float ggx2 = GeometrySchlickGGX(NdotL, k);
+	
+    return ggx1 * ggx2;
 }
 
-vec3 calculateSpotLight(SpotLight light, vec3 normal, vec3 viewDir, vec3 fragPos) {
-    vec3 lightDir = normalize(light.position - fragPos);
+vec3 fresnelSchlick(float cosTheta, vec3 F0) {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
 
-    float diff = max(dot(normal, lightDir), 0.0);
+vec3 calculatePBR(vec3 N, vec3 V, vec3 L, vec3 radiance, vec3 albedo, float metallic, float roughness) {
+    vec3 H = normalize(V + L);
 
-    vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
 
-    float theta = dot(lightDir, normalize(-light.direction));
-    float epsilon = (light.cutOff - light.outerCutOff);
-    float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
+    float NDF = DistributionGGX(N, H, roughness);
+    float G = GeometrySmith(N, V, L, roughness);
+    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
-    float distance = length(light.position - fragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+    vec3 kS = F;
+    vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
 
-    vec3 ambient = light.ambient * material.ambient;
-    vec3 diffuse = light.diffuse * diff * material.diffuse;
-    vec3 specular = light.specular * spec * material.specular;
+    vec3 numerator = NDF * G * F;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+    vec3 specular = numerator / denominator;
 
-    diffuse *= intensity;
-    specular *= intensity;
-
-    ambient *= attenuation;
-    diffuse *= attenuation;
-    specular *= attenuation;
-
-    return ambient + diffuse + specular;
+    float NdotL = max(dot(N, L), 0.0);                
+    return (kD * albedo / PI + specular) * radiance * NdotL;
 }
 
 void main() {
-    vec3 norm = normalize(Normal);
-    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 N = normalize(Normal);
+    vec3 V = normalize(viewPos - FragPos);
 
-    vec3 result = vec3(0.0);
+    vec3 Lo = vec3(0.0);
 
-    for (int i = 0; i < directionalLightsAmount; i++)
-        result += calculateDirectionalLight(directionalLights[i], norm, viewDir);
+    // directional lights
+    for (int i = 0; i < directionalLightsAmount; i++) {
+        vec3 L = normalize(-directionalLights[i].direction);
+        vec3 radiance = directionalLights[i].color;
 
-    for (int i = 0; i < pointLightsAmount; i++)
-        result += calculatePointLight(pointLights[i], norm, viewDir, FragPos);
+        Lo += calculatePBR(N, V, L, radiance, albedo, metallic, roughness);
+    }
 
-    for (int i = 0; i < spotLightsAmount; i++)
-        result += calculateSpotLight(spotLights[i], norm, viewDir, FragPos);
+    // point lights
+    for (int i = 0; i < pointLightsAmount; i++) {
+        vec3 L = normalize(pointLights[i].position - FragPos);
 
-    FragColor = vec4(result, 1.0f);
+        float dist = length(pointLights[i].position - FragPos);
+        float attenuation = 1.0 / (pointLights[i].constant + pointLights[i].linear * dist + pointLights[i].quadratic * dist * dist);
+
+        vec3 radiance = pointLights[i].color * attenuation;
+
+        Lo += calculatePBR(N, V, L, radiance, albedo, metallic, roughness);
+    }
+
+    // spot lights
+    for (int i = 0; i < spotLightsAmount; i++) {
+        vec3 L = normalize(spotLights[i].position - FragPos);
+
+        float dist = length(spotLights[i].position - FragPos);
+        float attenuation = 1.0 / (spotLights[i].constant + spotLights[i].linear * dist + spotLights[i].quadratic * dist * dist);
+
+        float theta = dot(L, normalize(-spotLights[i].direction));
+        float epsilon = spotLights[i].cutOff - spotLights[i].outerCutOff;
+        float intensity = clamp((theta - spotLights[i].outerCutOff) / epsilon, 0.0, 1.0);
+
+        vec3 radiance = spotLights[i].color * attenuation * intensity;
+
+        Lo += calculatePBR(N, V, L, radiance, albedo, metallic, roughness);
+    }
+
+    vec3 color = Lo;
+
+    color = color / (color + vec3(1.0));
+    color = pow(color, vec3(1.0 / 2.2));
+
+    FragColor = vec4(color, 1.0);
 }

@@ -117,9 +117,7 @@ class DirectionalLight : public Light {
             std::string arrayString = "directionalLights[" + std::to_string(index) + "]";
 
             shader->setVec3(arrayString + ".direction", getForwardVector());
-            shader->setVec3(arrayString + ".ambient", _color * _intensity * 0.1f);
-            shader->setVec3(arrayString + ".diffuse", _color * _intensity);
-            shader->setVec3(arrayString + ".specular", _color * _intensity);
+            shader->setVec3(arrayString + ".color", _color * _intensity);
         };
     protected:
         unsigned int _VAO, _VBO;
@@ -134,9 +132,7 @@ class PointLight : public Light {
             std::string arrayString = "pointLights[" + std::to_string(index) + "]";
 
             shader->setVec3(arrayString + ".position", glm::vec3(getModelMatrix()[3]));
-            shader->setVec3(arrayString + ".ambient", _color * _intensity * 0.1f);
-            shader->setVec3(arrayString + ".diffuse", _color * _intensity);
-            shader->setVec3(arrayString + ".specular", _color * _intensity);
+            shader->setVec3(arrayString + ".color", _color * _intensity);
 
             shader->setFloat(arrayString + ".constant", _constant);
             shader->setFloat(arrayString + ".linear", _linear);
@@ -157,9 +153,7 @@ class SpotLight : public Light {
 
             shader->setVec3(arrayString + ".position", glm::vec3(getModelMatrix()[3]));
             shader->setVec3(arrayString + ".direction", getForwardVector());
-            shader->setVec3(arrayString + ".ambient", _color * _intensity * 0.1f);
-            shader->setVec3(arrayString + ".diffuse", _color * _intensity);
-            shader->setVec3(arrayString + ".specular", _color * _intensity);
+            shader->setVec3(arrayString + ".color", _color * _intensity);
 
             shader->setFloat(arrayString + ".constant", _constant);
             shader->setFloat(arrayString + ".linear", _linear);
