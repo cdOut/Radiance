@@ -68,6 +68,11 @@ class Entity {
             glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), _transform.scale);
             return translationMat * rotationMat * scaleMat;
         }
+
+        virtual glm::vec3 getForwardVector() const {
+            glm::mat4 model = getModelMatrix();
+            return glm::normalize(glm::vec3(model[2]) * -1.0f);
+        }
 };
 
 #endif

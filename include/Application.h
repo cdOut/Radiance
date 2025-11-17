@@ -16,6 +16,7 @@
 #include "editor/mesh/primitives/Sphere.h"
 #include "editor/mesh/primitives/Primitive.h"
 #include "editor/core/Light.h"
+#include "editor/core/LightList.h"
 
 class Application {
     public:
@@ -342,7 +343,6 @@ class Application {
                 }
                 if (ImGui::BeginMenu("Add")) {
                     if (ImGui::BeginMenu("Mesh")) {
-
                         for (const auto& primitive : primitiveList) {
                             if (ImGui::MenuItem(primitive.name)) {
                                 Entity* selected = _scene->getSelectedEntity();
@@ -359,17 +359,16 @@ class Application {
                         ImGui::EndMenu();
                     }
                     if (ImGui::BeginMenu("Light")) {
-                        for (int i = 0; i < static_cast<int>(LightType::END); i++) {
-                            LightType lightType = static_cast<LightType>(i);
-                            if (ImGui::MenuItem(getLightTypeName(lightType).c_str())) {
+                        for (const auto& light : lightList) {
+                            if (ImGui::MenuItem(light.name)) {
                                 Entity* selected = _scene->getSelectedEntity();
                                 if (selected)
                                     selected->setIsSelected(false);
 
-                                Entity* entity = _scene->createEntity<Light>(lightType);
+                                Entity* entity = light.create(_scene.get());
                                 _scene.get()->setSelectedEntity(entity);
                                 entity->setIsSelected(true);
-                                entity->setName(_scene->generateUniqueName(getLightTypeName(lightType).c_str()));
+                                entity->setName(_scene->generateUniqueName(light.name));
                             }
                         }
                         ImGui::EndMenu();

@@ -47,6 +47,9 @@ class Mesh : public Entity {
                 glLineWidth(4.0f);
                 glDepthMask(GL_FALSE);
 
+                glEnable(GL_POLYGON_OFFSET_LINE);
+                glPolygonOffset(-1.0f, -1.0f);
+
                 _selectedShader->use();
                 _selectedShader->setMat4("model", model);
                 _selectedShader->setMat3("normalMatrix", normalMatrix);
@@ -58,6 +61,8 @@ class Mesh : public Entity {
                     glDrawArrays(GL_TRIANGLES, 0, (GLsizei)(_vertices.size() / _floatsPerVert));
                 }
                 glBindVertexArray(0);
+
+                glDisable(GL_POLYGON_OFFSET_LINE);
 
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
                 glDisable(GL_CULL_FACE);

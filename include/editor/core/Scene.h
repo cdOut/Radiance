@@ -42,13 +42,12 @@ class Scene {
 
             _meshShader->use();
             _meshShader->setVec3("viewPos", _camera->getTransform().position);
+            uploadLightsToShader(_meshShader.get());
 
             _gridShader->setViewProjection(view, projection);
             _meshShader->setViewProjection(view, projection);
             _outlineShader->setViewProjection(view, projection);
             _billboardShader->setViewProjection(view, projection);
-
-            sendLightsDataToShader(_meshShader.get());
 
             for (const auto& [_, e] : _entities) {
                 if (!dynamic_cast<Light*>(e.get()))
@@ -231,11 +230,6 @@ class Scene {
 
             _meshShader->use();
 
-            _meshShader->setVec3("light.direction", {-0.2f, -1.0f, -0.3f});
-            _meshShader->setVec3("light.ambient", {0.2f, 0.2f, 0.2f});
-            _meshShader->setVec3("light.diffuse", {0.5f, 0.5f, 0.5f});
-            _meshShader->setVec3("light.specular", {1.0f, 1.0f, 1.0f});
-
             _meshShader->setVec3("material.ambient", {1.0f, 0.5f, 0.31f});
             _meshShader->setVec3("material.diffuse", {1.0f, 0.5f, 0.31f});
             _meshShader->setVec3("material.specular", {0.5f, 0.5f, 0.5f});
@@ -255,8 +249,28 @@ class Scene {
             _lightIconSelected = loadTexture("assets/textures/lightbulb.png");
         }
 
-        void sendLightsDataToShader(Shader* shader) {
+        void uploadLightsToShader(Shader* shader) {
+            unsigned int dirIndex = 0, pointIndex = 0, spotIndex = 0;
+            
+            for (Light* light : _lights) {
+                switch (light->getType()) {
+                    case LightType::Directional:
+                        light->uploadToShader(shader, dirIndex++);
+                        break;
+                    case LightType::Point:
+                        light->uploadToShader(shader, pointIndex++);
+                        break;
+                    case LightType::Spot:
+                        light->uploadToShader(shader, spotIndex++);
+                        break;
+                    default:
+                        break;
+                }
+            }
 
+            shader->setInt("directionalLightsAmount", dirIndex);
+            shader->setInt("pointLightsAmount", pointIndex);
+            shader->setInt("spotLightsAmount", spotIndex);
         }
 };
 
