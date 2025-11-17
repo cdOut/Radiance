@@ -480,6 +480,20 @@ class Application {
                     ImGui::DragFloat3("Scale",    glm::value_ptr(transform.scale),    0.1f);
                 }
 
+                Light* light = dynamic_cast<Light*>(selected);
+                if (light) {
+                    if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen)) {
+                        ImGui::ColorEdit3("Color", glm::value_ptr(light->getColor()));
+                        ImGui::SliderFloat("Intensity", &light->getIntensity(), 0.0f, 10.0f);
+
+                        SpotLight* spot = dynamic_cast<SpotLight*>(light);
+                        if (spot) {
+                            ImGui::SliderFloat("Size", &spot->getSize(), 0.0f, 180.0f);
+                            ImGui::SliderFloat("Blend", &spot->getBlend(), 0.0f, 1.0f);
+                        }
+                    }
+                }
+
                 ImGui::Separator();
                 if (ImGui::Button("Delete Entity", ImVec2(-FLT_MIN, 0))) {
                     _scene->removeEntity(selected);
