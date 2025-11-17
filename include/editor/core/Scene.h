@@ -109,10 +109,10 @@ class Scene {
 
             int id = idVar++;
             raw->setId(id);
+            raw->setSelectedShader(_outlineShader.get());
 
             if constexpr (std::is_base_of_v<Mesh, T>) {
                 raw->setShader(_meshShader.get());
-                raw->setSelectedShader(_outlineShader.get());
             } else if constexpr (std::is_base_of_v<Light, T>) {
                 raw->setShader(_billboardShader.get());
                 raw->setTextures(_lightIcon, _lightIconSelected);

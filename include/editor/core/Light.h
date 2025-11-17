@@ -63,7 +63,55 @@ class Light : public Entity {
 
 class DirectionalLight : public Light {
     public:
-        DirectionalLight() : Light(LightType::Directional) {}
+        DirectionalLight() : Light(LightType::Directional) {
+            glGenVertexArrays(1, &_VAO);
+            glGenBuffers(1, &_VBO);
+            
+            _vertices[0] = _vertices[2] = {};
+            _vertices[1] = _vertices[3] = {0.0f, 1.0f, 0.0f};
+
+            glBindVertexArray(_VAO);
+            glBindBuffer(GL_ARRAY_BUFFER, _VBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(_vertices), _vertices, GL_DYNAMIC_DRAW);
+
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec3), (void*)0);
+
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec3), (void*) (sizeof(glm::vec3)));
+
+            glBindVertexArray(0);
+        }
+
+        ~DirectionalLight() {
+            if (_VAO) glDeleteVertexArrays(1, &_VAO);
+            if (_VBO) glDeleteBuffers(1, &_VBO);
+        }
+
+        virtual void render() override {
+            Light::render();
+
+            if (_isSelected && _selectedShader) {
+                glm::vec3 start = glm::vec3(getModelMatrix()[3]);
+                glm::vec3 dir = glm::normalize(getForwardVector());
+                glm::vec3 end = start + dir * 4.0f;
+
+                _vertices[0] = start;
+                _vertices[2] = end;
+
+                glBindVertexArray(_VAO);
+                glBindBuffer(GL_ARRAY_BUFFER, _VBO);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(_vertices), _vertices, GL_DYNAMIC_DRAW);
+
+                _selectedShader->use();
+                _selectedShader->setMat4("model", glm::mat4(1.0f));
+                _selectedShader->setMat3("normalMatrix", glm::mat4(1.0f));
+
+                glDrawArrays(GL_LINES, 0, 2);
+
+                glBindVertexArray(0);
+            }
+        }
 
         virtual void uploadToShader(Shader* shader, int index) override {
             std::string arrayString = "directionalLights[" + std::to_string(index) + "]";
@@ -73,6 +121,9 @@ class DirectionalLight : public Light {
             shader->setVec3(arrayString + ".diffuse", _color * _intensity);
             shader->setVec3(arrayString + ".specular", _color * _intensity);
         };
+    protected:
+        unsigned int _VAO, _VBO;
+        glm::vec3 _vertices[4];
 };
 
 class PointLight : public Light {
