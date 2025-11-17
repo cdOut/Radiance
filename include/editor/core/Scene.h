@@ -116,7 +116,7 @@ class Scene {
                 raw->setSelectedShader(_outlineShader.get());
             } else if constexpr (std::is_base_of_v<Light, T>) {
                 raw->setShader(_billboardShader.get());
-                raw->setTexture(_lightIcon);
+                raw->setTextures(_lightIcon, _lightIconSelected);
                 _lights.push_back(raw);
             }
 
@@ -195,7 +195,7 @@ class Scene {
         std::unique_ptr<Shader> _billboardShader;
         std::unique_ptr<Shader> _gpuSelectShader;
 
-        unsigned int _lightIcon;
+        unsigned int _lightIcon, _lightIconSelected;
 
         unsigned int loadTexture(std::string path) {
             unsigned int texture;
@@ -251,7 +251,8 @@ class Scene {
             _grid = createEntity<Grid>();   
             _grid->setShader(_gridShader.get());
 
-            _lightIcon = loadTexture("assets/textures/lightbulb.png");
+            _lightIcon = loadTexture("assets/textures/lightbulbEmpty.png");
+            _lightIconSelected = loadTexture("assets/textures/lightbulb.png");
         }
 
         void sendLightsDataToShader(Shader* shader) {

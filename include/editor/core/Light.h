@@ -28,6 +28,12 @@ class Light : public Entity {
 
         const LightType& getType() const { return _type; }
 
+        void setTextures(unsigned int texture, unsigned int selectedTexture) {
+            _texture = texture;
+            _selectedTexture = selectedTexture;
+            setTexture(_texture);
+        }
+
         void setTexture(unsigned int texture) {
             _billboard.setTexture(texture);
         }
@@ -35,6 +41,11 @@ class Light : public Entity {
         virtual void setShader(Shader* shader) override {
             Entity::setShader(shader);
             _billboard.setShader(shader);
+        }
+
+        virtual void setIsSelected(bool isSelected) override {
+            Entity::setIsSelected(isSelected);
+            _billboard.setTexture(isSelected ? _selectedTexture : _texture);
         }
 
         virtual void render() override {
@@ -45,6 +56,8 @@ class Light : public Entity {
     private:
         Billboard _billboard;
         LightType _type;
+
+        unsigned int _texture, _selectedTexture;
 
         glm::vec3 ambient{0.0f};
         glm::vec3 diffuse{0.0f};

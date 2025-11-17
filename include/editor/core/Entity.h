@@ -41,7 +41,7 @@ class Entity {
         void setName(const std::string& name) { _name = name; }
         virtual void setShader(Shader* shader) { _shader = shader; }
         void setSelectedShader(Shader* selectedShader) { _selectedShader = selectedShader; }
-        void setIsSelected(bool isSelected) { _isSelected = isSelected; }
+        virtual void setIsSelected(bool isSelected) { _isSelected = isSelected; }
         void setId(unsigned int id) { 
             _id = id;
             _idColor = {(id & 0xFF), ((id >> 8) & 0xFF), ((id >> 16) & 0xFF)};
