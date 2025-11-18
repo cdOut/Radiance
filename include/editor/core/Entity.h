@@ -32,7 +32,6 @@ class Entity {
         virtual void render() {}
 
         Transform& getTransform() { return _transform; }
-        const Transform& getTransform() const { return _transform; }
         const std::string& getName() const { return _name; }
         const bool getIsSelected() const { return _isSelected; }
         const unsigned int getId() const { return _id; }

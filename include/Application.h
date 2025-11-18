@@ -480,6 +480,17 @@ class Application {
                     ImGui::DragFloat3("Scale",    glm::value_ptr(transform.scale),    0.1f);
                 }
 
+                Mesh* mesh = dynamic_cast<Mesh*>(selected);
+                if (mesh) {
+                    Material& material = mesh->getMaterial();
+
+                    if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
+                        ImGui::ColorEdit3("Albedo", glm::value_ptr(material.albedo));
+                        ImGui::SliderFloat("Metallic", &material.metallic, 0.0f, 1.0f);
+                        ImGui::SliderFloat("Roughness", &material.roughness, 0.0f, 1.0f);
+                    }
+                }
+
                 Light* light = dynamic_cast<Light*>(selected);
                 if (light) {
                     if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen)) {

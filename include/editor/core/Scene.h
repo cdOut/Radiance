@@ -230,10 +230,6 @@ class Scene {
 
             _meshShader->use();
 
-            _meshShader->setVec3("albedo", {1.0f, 0.5f, 0.31f});
-            _meshShader->setFloat("metallic", 0.1f);
-            _meshShader->setFloat("roughness", 0.2f);
-
             _outlineShader->use();
             _outlineShader->setVec3("color", {1.0f, 1.0f, 1.0f});
 

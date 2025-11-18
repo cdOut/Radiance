@@ -106,6 +106,7 @@ class DirectionalLight : public Light {
                 _selectedShader->use();
                 _selectedShader->setMat4("model", glm::mat4(1.0f));
                 _selectedShader->setMat3("normalMatrix", glm::mat4(1.0f));
+                _selectedShader->setVec3("color", glm::vec3(1.0f));
 
                 glDrawArrays(GL_LINES, 0, 2);
 

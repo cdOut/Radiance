@@ -21,6 +21,12 @@
 #include "../core/Entity.h"
 #include "../core/Shader.h"
 
+struct Material {
+    glm::vec3 albedo{0.5f};
+    float metallic = 0.1f;
+    float roughness = 0.2f;
+};
+
 class Mesh : public Entity {
     public:
         Mesh() : _VAO(0), _VBO(0), _EBO(0), _floatsPerVert(6) {
@@ -53,6 +59,7 @@ class Mesh : public Entity {
                 _selectedShader->use();
                 _selectedShader->setMat4("model", model);
                 _selectedShader->setMat3("normalMatrix", normalMatrix);
+                _selectedShader->setVec3("color", glm::vec3(1.0f));
 
                 glBindVertexArray(_VAO);
                 if (!_indices.empty()) {
@@ -75,6 +82,10 @@ class Mesh : public Entity {
             _shader->setMat4("model", model);
             _shader->setMat3("normalMatrix", normalMatrix);
 
+            _shader->setVec3("albedo", glm::pow(_material.albedo, glm::vec3(2.2f)));
+            _shader->setFloat("metallic", _material.metallic);
+            _shader->setFloat("roughness", _material.roughness);
+
             glBindVertexArray(_VAO);
             if (!_indices.empty()) {
                 glDrawElements(GL_TRIANGLES, _indices.size(), GL_UNSIGNED_INT, 0);
@@ -88,11 +99,14 @@ class Mesh : public Entity {
             generateMesh();
             initializeBuffers();
         }
+
+        Material& getMaterial() { return _material; }
     protected:
         unsigned int _VAO, _VBO, _EBO;
         unsigned int _floatsPerVert;
         std::vector<float> _vertices;
         std::vector<unsigned int> _indices;
+        Material _material;
 
         virtual void generateMesh() = 0;
 
