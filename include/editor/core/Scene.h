@@ -37,6 +37,12 @@ class Scene {
         }
 
         void render(float deltaTime) {
+            glEnable(GL_STENCIL_TEST);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); 
+            glClear(GL_STENCIL_BUFFER_BIT);
+
+            glStencilMask(0x00);
+
             glm::mat4 view = _camera->getViewMatrix();
             glm::mat4 projection = _camera->getProjectionMatrix();
 
@@ -57,6 +63,50 @@ class Scene {
             for (Light* light : _lights) {
                 light->render();
             }
+
+            if (Mesh* mesh = dynamic_cast<Mesh*>(_selected)) {
+                glm::mat4 model = mesh->getModelMatrix();
+                glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
+                Material& material = mesh->getMaterial();
+
+                glStencilMask(0xFF);
+                glStencilFunc(GL_ALWAYS, 1, 0xFF);  
+                glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+                glDisable(GL_DEPTH_TEST);
+                glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+                _meshShader->use();
+                _meshShader->setMat4("model", model);
+                _meshShader->setMat3("normalMatrix", normalMatrix);
+                _meshShader->setVec3("albedo", glm::pow(material.albedo, glm::vec3(2.2f)));
+                _meshShader->setFloat("metallic", material.metallic);
+                _meshShader->setFloat("roughness", material.roughness);
+
+                mesh->renderGeometry();
+
+                glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                glEnable(GL_DEPTH_TEST);
+
+                glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+                glStencilMask(0x00);
+                glDisable(GL_DEPTH_TEST);
+
+                glm::mat4 outlineModel = glm::scale(model, glm::vec3(1.05f));
+
+                _outlineShader->use();
+                _outlineShader->setMat4("model", outlineModel);
+                _outlineShader->setMat3("normalMatrix", normalMatrix);
+                _outlineShader->setVec3("color", glm::vec3(1.0f));
+
+                mesh->renderGeometry();
+
+                glEnable(GL_DEPTH_TEST);
+            }
+
+            glStencilMask(0xFF);
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glDisable(GL_STENCIL_TEST);
         }
 
         void renderGpuSelect() {

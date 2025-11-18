@@ -45,17 +45,7 @@ class Entity {
             _id = id;
             _idColor = {(id & 0xFF), ((id >> 8) & 0xFF), ((id >> 16) & 0xFF)};
         }
-    protected:
-        unsigned int _id = 0;
-        glm::vec3 _idColor{0.0f};
-        Transform _transform;
-        std::string _name;
-        Shader* _shader = nullptr;
-        Shader* _selectedShader = nullptr;
-        bool _isSelected = true;
 
-        virtual void initializeCreate() {}
-        
         virtual glm::mat4 getModelMatrix() const {
             glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), _transform.position);
             glm::quat rotationQuat = glm::quat(glm::yawPitchRoll(
@@ -67,6 +57,16 @@ class Entity {
             glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), _transform.scale);
             return translationMat * rotationMat * scaleMat;
         }
+    protected:
+        unsigned int _id = 0;
+        glm::vec3 _idColor{0.0f};
+        Transform _transform;
+        std::string _name;
+        Shader* _shader = nullptr;
+        Shader* _selectedShader = nullptr;
+        bool _isSelected = true;
+
+        virtual void initializeCreate() {}
 
         virtual glm::vec3 getForwardVector() const {
             glm::mat4 model = getModelMatrix();
