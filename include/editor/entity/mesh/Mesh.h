@@ -18,8 +18,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
-#include "../core/Entity.h"
-#include "../core/Shader.h"
+#include "../Entity.h"
+#include "../../Shader.h"
 
 struct Material {
     glm::vec3 albedo{0.5f};

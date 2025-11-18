@@ -12,11 +12,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <memory>
-#include "editor/core/Scene.h"
-#include "editor/mesh/primitives/Sphere.h"
-#include "editor/mesh/primitives/Primitive.h"
-#include "editor/core/Light.h"
-#include "editor/core/LightList.h"
+#include "editor/Scene.h"
+#include "editor/entity/mesh/primitives/Primitive.h"
+#include "editor/entity/light/LightList.h"
 
 class Application {
     public:

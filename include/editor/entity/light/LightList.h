@@ -2,8 +2,8 @@
 #define LIGHT_LIST_H
 
 #include <functional>
-#include "Entity.h"
-#include "Scene.h"
+#include "../Entity.h"
+#include "../../Scene.h"
 #include "Light.h"
 
 struct LightData { 

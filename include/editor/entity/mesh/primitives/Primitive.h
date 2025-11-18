@@ -2,8 +2,8 @@
 #define PRIMITIVE_H
 
 #include <functional>
-#include "../../core/Entity.h"
-#include "../../core/Scene.h"
+#include "../../Entity.h"
+#include "../../../Scene.h"
 
 #include "Sphere.h"
 #include "Plane.h"

@@ -7,11 +7,11 @@
 #include <type_traits>
 #include <stb_image.h>
 
-#include "Entity.h"
-#include "../Camera.h"
-#include "../Grid.h"
-#include "Light.h"
-#include "../mesh/Mesh.h"
+#include "entity/Entity.h"
+#include "entity/util/Camera.h"
+#include "entity/util/Grid.h"
+#include "entity/light/Light.h"
+#include "entity/mesh/Mesh.h"
 
 class Scene {
     public:

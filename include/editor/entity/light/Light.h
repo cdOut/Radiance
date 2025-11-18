@@ -4,9 +4,9 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <functional>
-#include "Entity.h"
-#include "Scene.h"
-#include "../Billboard.h"
+#include "../Entity.h"
+#include "../../Scene.h"
+#include "../util/Billboard.h"
 
 enum class LightType {
     Directional,

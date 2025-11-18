@@ -8,7 +8,7 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <string>
-#include "Shader.h"
+#include "../Shader.h"
 
 struct Transform {
     glm::vec3 position {0.0f};

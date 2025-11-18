@@ -3,7 +3,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "core/Entity.h"
+#include "../Entity.h"
 
 class Camera : public Entity {
     public:

@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <vector>
-#include "core/Shader.h"
+#include "../../Shader.h"
 
 class Billboard {
     public:
