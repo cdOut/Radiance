@@ -68,8 +68,11 @@ class Scene {
             _billboardShader->setViewProjection(view, projection);
 
             for (const auto& [_, e] : _entities) {
-                if (!dynamic_cast<Light*>(e.get()))
+                if (!dynamic_cast<Light*>(e.get())) {
+                    if (dynamic_cast<Grid*>(e.get()) && !_showGrid)
+                        continue;
                     e->render();
+                }
             }
 
             for (Light* light : _lights) {
@@ -241,6 +244,8 @@ class Scene {
 
             return std::isdigit(name[name.size() - 3]) && std::isdigit(name[name.size() - 2]) && std::isdigit(name[name.size() - 1]);
         }
+
+        bool _showGrid = true;
     private:
         std::unordered_map<int, std::unique_ptr<Entity>> _entities;
         std::vector<Light*> _lights;
