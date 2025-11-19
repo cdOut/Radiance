@@ -17,6 +17,9 @@ struct PointLight {
     float constant;
     float linear;
     float quadratic;
+
+    samplerCube shadowMap;
+    float farPlane;
 };
 
 struct SpotLight {
@@ -102,6 +105,35 @@ vec3 calculatePBR(vec3 N, vec3 V, vec3 L, vec3 radiance, vec3 albedo, float meta
     return (kD * albedo / PI + specular) * radiance * NdotL;
 }
 
+float calculatePointShadow(PointLight light, vec3 fragPos) {
+    vec3 sampleOffsetDirections[20] = vec3[] (
+        vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+        vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+        vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+        vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+        vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+    );
+
+    vec3 fragToLight = fragPos - light.position;
+    float currentDepth = length(fragToLight);
+
+    float shadow = 0.0;
+    float bias   = 0.15;
+    int samples  = 20;
+    float viewDistance = length(viewPos - fragPos);
+    float diskRadius = (1.0 + (viewDistance / light.farPlane)) / 25.0;
+    for(int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(light.shadowMap, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
+        closestDepth *= light.farPlane;
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+    shadow /= float(samples);
+
+    return shadow;
+}
+
 void main() {
     vec3 N = normalize(Normal);
     vec3 V = normalize(viewPos - FragPos);
@@ -125,7 +157,9 @@ void main() {
 
         vec3 radiance = pointLights[i].color * attenuation;
 
-        Lo += calculatePBR(N, V, L, radiance, albedo, metallic, roughness);
+        float shadow = calculatePointShadow(pointLights[i], FragPos);
+
+        Lo += (1.0 - shadow) * calculatePBR(N, V, L, radiance, albedo, metallic, roughness);
     }
 
     // spot lights

@@ -36,6 +36,18 @@ class Scene {
                 _grid->handleCameraPos(_camera->getTransform().position);
         }
 
+        void renderShadowPass(int viewportWidth, int viewportHeight) {
+            glViewport(0, 0, 1024, 1024);
+            
+            for (Light* light : _lights) {
+                if (PointLight* pointLight = dynamic_cast<PointLight*>(light)) {
+                    renderShadowPointPass(pointLight);
+                }
+            }
+
+            glViewport(0, 0, viewportWidth, viewportHeight);
+        }
+
         void render(float deltaTime) {
             glEnable(GL_STENCIL_TEST);
             glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); 
@@ -243,6 +255,7 @@ class Scene {
         std::unique_ptr<Shader> _outlineShader;
         std::unique_ptr<Shader> _billboardShader;
         std::unique_ptr<Shader> _gpuSelectShader;
+        std::unique_ptr<Shader> _depthCubeShader;
 
         unsigned int _lightIcon, _lightIconSelected;
 
@@ -277,6 +290,7 @@ class Scene {
             _outlineShader = std::make_unique<Shader>("assets/shaders/default.vs", "assets/shaders/unlit.fs");
             _billboardShader = std::make_unique<Shader>("assets/shaders/billboard.vs", "assets/shaders/billboard.fs");
             _gpuSelectShader = std::make_unique<Shader>("assets/shaders/gpuSelect.vs", "assets/shaders/gpuSelect.fs");
+            _depthCubeShader = std::make_unique<Shader>("assets/shaders/depth.vs", "assets/shaders/depth.fs", "assets/shaders/depth.gs");
 
             _meshShader->use();
 
@@ -292,6 +306,34 @@ class Scene {
 
             _lightIcon = loadTexture("assets/textures/lightbulbEmpty.png");
             _lightIconSelected = loadTexture("assets/textures/lightbulb.png");
+        }
+
+        void renderShadowPointPass(PointLight* light) {
+            float farPlane;
+            std::vector<glm::mat4> shadowTransforms;
+            light->getDepthShaderData(farPlane, shadowTransforms);
+
+            _depthCubeShader->use();
+            for (int i = 0; i < 6; i++) {
+                _depthCubeShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+            }
+            _depthCubeShader->setFloat("farPlane", farPlane);
+            _depthCubeShader->setVec3("lightPosition", light->getTransform().position);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, light->_depthMapFBO);
+            glClear(GL_DEPTH_BUFFER_BIT);
+
+            for (const auto& [_, e] : _entities) {
+                if (e.get() == _camera || e.get() == _grid)
+                    continue;
+                if (Mesh* mesh = dynamic_cast<Mesh*>(e.get())) {
+                    glm::mat4 model = mesh->getModelMatrix();
+                    _depthCubeShader->setMat4("model", model);
+                    mesh->renderGeometry();
+                }
+            }
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
         void uploadLightsToShader(Shader* shader) {

@@ -106,6 +106,11 @@ class Application {
                 glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+                _scene->renderShadowPass((int)_viewportSize.x, (int)_viewportSize.y);
+
+                glBindFramebuffer(GL_FRAMEBUFFER, _MSAAFBO);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
                 _scene->render(deltaTime);
 
                 glBindFramebuffer(GL_READ_FRAMEBUFFER, _MSAAFBO);
