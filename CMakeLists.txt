@@ -36,7 +36,10 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(imgui)
 
 # stb_image
-add_library(stb_image ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image/src/stb_image.cpp)
+add_library(stb_image 
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image/src/stb_image.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image/src/stb_image_write.cpp
+)
 target_include_directories(stb_image PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image/include)
 
 add_library(imgui

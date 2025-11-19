@@ -16,6 +16,10 @@
 #include "editor/entity/mesh/primitives/Primitive.h"
 #include "editor/entity/light/LightList.h"
 
+#include "raytracer/Raytracer.h"
+#include <thread>
+#include <atomic>
+
 class Application {
     public:
         Application(int width, int height, const char* title) : _width(width), _height(height), _title(title) {
@@ -128,6 +132,11 @@ class Application {
 
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+                if (_raytraceFinished) {
+                    _renderId = Raytracer::uploadRender(_renderData.data(), 1920, 1080);
+                    _raytraceFinished = false;
+                }
+
                 renderUI();
                 
                 glfwSwapBuffers(_window);
@@ -157,6 +166,12 @@ class Application {
         bool _isRightButtonDown = false;
 
         float _lastTime = 0.0f;
+
+        std::thread _raytraceThread;
+        std::atomic<bool> _raytraceInProgress = false;
+        std::atomic<bool> _raytraceFinished = false;
+        unsigned int _renderId = 0;
+        std::vector<unsigned char> _renderData;
 
         std::unique_ptr<Scene> _scene;
 
@@ -333,66 +348,13 @@ class Application {
             }
         }
 
-        void renderUI() {
-            ImGui_ImplOpenGL3_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
-
-            if (ImGui::BeginMainMenuBar()) {
-                if (ImGui::BeginMenu("Scene")) {
-                    ImGui::MenuItem("New scene");
-                    ImGui::MenuItem("Load scene");
-                    ImGui::MenuItem("Save scene");
-                    ImGui::EndMenu();
-                }
-                if (ImGui::BeginMenu("Add")) {
-                    if (ImGui::BeginMenu("Mesh")) {
-                        for (const auto& primitive : primitiveList) {
-                            if (ImGui::MenuItem(primitive.name)) {
-                                Entity* selected = _scene->getSelectedEntity();
-                                if (selected)
-                                    selected->setIsSelected(false);
-
-                                Entity* entity = primitive.create(_scene.get());
-                                _scene.get()->setSelectedEntity(entity);
-                                entity->setIsSelected(true);
-                                entity->setName(_scene->generateUniqueName(primitive.name));
-                            }
-                        }
-
-                        ImGui::EndMenu();
-                    }
-                    if (ImGui::BeginMenu("Light")) {
-                        for (const auto& light : lightList) {
-                            if (ImGui::MenuItem(light.name)) {
-                                Entity* selected = _scene->getSelectedEntity();
-                                if (selected)
-                                    selected->setIsSelected(false);
-
-                                Entity* entity = light.create(_scene.get());
-                                _scene.get()->setSelectedEntity(entity);
-                                entity->setIsSelected(true);
-                                entity->setName(_scene->generateUniqueName(light.name));
-                            }
-                        }
-                        ImGui::EndMenu();
-                    }
-                    ImGui::EndMenu();
-                }
-                ImGui::MenuItem("Render");
-                ImGui::MenuItem("Help");
-                ImGui::EndMainMenuBar();
-            }
-
+        void renderEditor() {
             float menuBarHeight = ImGui::GetFrameHeight();
-            float leftWidth = _width - 250.0f;
-            float rightWidth = _width - leftWidth;
+            float leftWidth = _width - 260.0f;
             float panelHeight = _height - menuBarHeight;
             float topHeight = panelHeight * 0.4f;
 
-            ImGui::SetNextWindowPos(ImVec2(0, menuBarHeight));
-            ImGui::SetNextWindowSize(ImVec2(leftWidth, panelHeight));
-            ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+            ImGui::BeginChild("Viewport", ImVec2(leftWidth, 0), true, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
             _viewportSize = ImGui::GetContentRegionAvail();
             if (_viewportSize.x != _lastViewportSize.x || _viewportSize.y != _lastViewportSize.y) {
@@ -429,11 +391,16 @@ class Application {
             drawList->AddRectFilled(ImVec2(imageMin.x + overlayWidth, imageMin.y), ImVec2(imageMax.x - overlayWidth, imageMin.y + overlayHeight), overlayColor);
             drawList->AddRectFilled(ImVec2(imageMin.x + overlayWidth, imageMax.y - overlayHeight), ImVec2(imageMax.x - overlayWidth, imageMax.y), overlayColor);
 
-            ImGui::End();
+            ImGui::EndChild();
 
-            ImGui::SetNextWindowPos(ImVec2(leftWidth, menuBarHeight));
-            ImGui::SetNextWindowSize(ImVec2(rightWidth, topHeight));
-            ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+            ImGui::SameLine();
+
+            ImGui::BeginGroup();
+
+            ImGui::TextUnformatted("Hierarchy");
+            ImGui::Separator();
+
+            ImGui::BeginChild("Hierarchy", ImVec2(0, topHeight), true, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
             for (const auto& [_, e] : _scene->getEntities()) {
                 if (e.get() == _scene->getCamera()) continue;
@@ -450,11 +417,12 @@ class Application {
                 }
             }
 
-            ImGui::End();
+            ImGui::EndChild();
 
-            ImGui::SetNextWindowPos(ImVec2(leftWidth, menuBarHeight + topHeight));
-            ImGui::SetNextWindowSize(ImVec2(rightWidth, panelHeight - topHeight));
-            ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+            ImGui::TextUnformatted("Inspector");
+            ImGui::Separator();
+
+            ImGui::BeginChild("Inspector", ImVec2(0, 0), true, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
             Entity* selected = _scene->getSelectedEntity();
             if (selected) {
@@ -519,6 +487,114 @@ class Application {
                 if (selected)
                     selected->setIsSelected(false);
                 _scene->setSelectedEntity(nullptr);
+            }
+
+            ImGui::EndChild();
+
+            ImGui::EndGroup();
+
+            ImGui::SameLine();
+            ImGui::Dummy(ImVec2(10.0f, 0.0f));
+        }
+
+        void renderRaytracer() {
+            if (_renderId) {
+                ImVec2 avail = ImGui::GetContentRegionAvail();
+
+                float aspect = 16.0f / 9.0f;
+                float width = avail.x;
+                float height = avail.x / aspect;
+
+                if (height > avail.y) {
+                    height = avail.y;
+                    width = avail.y * aspect;
+                }
+
+                float padX = (avail.x - width) * 0.5f;
+                float padY = (avail.y - height) * 0.5f;
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + padX);
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + padY);
+
+                ImGui::Image((ImTextureID)(intptr_t)_renderId, ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
+            }
+        }
+
+        void renderUI() {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            if (ImGui::BeginMainMenuBar()) {
+                if (ImGui::BeginMenu("Options")) {
+                    ImGui::MenuItem("Show grid", NULL, &_scene->_showGrid);
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Create")) {
+                    if (ImGui::BeginMenu("Mesh")) {
+                        for (const auto& primitive : primitiveList) {
+                            if (ImGui::MenuItem(primitive.name)) {
+                                Entity* selected = _scene->getSelectedEntity();
+                                if (selected)
+                                    selected->setIsSelected(false);
+
+                                Entity* entity = primitive.create(_scene.get());
+                                _scene.get()->setSelectedEntity(entity);
+                                entity->setIsSelected(true);
+                                entity->setName(_scene->generateUniqueName(primitive.name));
+                            }
+                        }
+
+                        ImGui::EndMenu();
+                    }
+                    if (ImGui::BeginMenu("Light")) {
+                        for (const auto& light : lightList) {
+                            if (ImGui::MenuItem(light.name)) {
+                                Entity* selected = _scene->getSelectedEntity();
+                                if (selected)
+                                    selected->setIsSelected(false);
+
+                                Entity* entity = light.create(_scene.get());
+                                _scene.get()->setSelectedEntity(entity);
+                                entity->setIsSelected(true);
+                                entity->setName(_scene->generateUniqueName(light.name));
+                            }
+                        }
+                        ImGui::EndMenu();
+                    }
+                    ImGui::EndMenu();
+                }
+                if (ImGui::MenuItem("Render") && !_raytraceInProgress) {
+                    _raytraceInProgress = true;
+                    _raytraceFinished = false;
+
+                    _raytraceThread = std::thread([this]() {
+                        _renderData = Raytracer::raytrace();
+                        _raytraceInProgress = false;
+                        _raytraceFinished = true;
+                    });
+                    _raytraceThread.detach();
+                }
+                ImGui::EndMainMenuBar();
+            }
+
+            ImGui::SetNextWindowPos(ImVec2(0, ImGui::GetFrameHeight()));
+            ImGui::SetNextWindowSize(ImVec2(_width, _height - ImGui::GetFrameHeight()));
+            ImGui::Begin("Application", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
+
+            if (ImGui::BeginTabBar("Tabs")) {
+                if (ImGui::BeginTabItem("Editor")) {
+                    renderEditor();
+
+                    ImGui::EndTabItem();
+                }
+
+                if (ImGui::BeginTabItem("Raytracer")) {
+                    renderRaytracer();
+
+                    ImGui::EndTabItem();
+                }
+
+                ImGui::EndTabBar();
             }
 
             ImGui::End();
