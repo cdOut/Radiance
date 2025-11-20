@@ -146,7 +146,7 @@ class PointLight : public Light {
             shader->setFloat(arrayString + ".linear", _linear);
             shader->setFloat(arrayString + ".quadratic", _quadratic);
 
-            shader->setInt(arrayString + ".atlasIndex", index * 6);
+            shader->setInt(arrayString + ".atlasIndex", _atlasIndex * 6);
             shader->setFloat(arrayString + ".farPlane", _farPlane);
         };
 
@@ -166,6 +166,9 @@ class PointLight : public Light {
             shadowTransforms.push_back(shadowProjection * glm::lookAt(lightPosition, lightPosition + glm::vec3( 0.0, 0.0,-1.0), glm::vec3(0.0,-1.0, 0.0)));
         }
 
+        int getAtlasIndex() const { return _atlasIndex; }
+        void setAtlasIndex(float index) { _atlasIndex = index; }
+
         unsigned int _depthMapFBO, _depthCubemap;
     protected:
         float _constant = 1.0f;
@@ -174,6 +177,8 @@ class PointLight : public Light {
 
         float _nearPlane = 1.0f;
         float _farPlane = 25.0f;
+
+        float _atlasIndex;
 
         void createDepthCubemap() {
             glGenFramebuffers(1, &_depthMapFBO);

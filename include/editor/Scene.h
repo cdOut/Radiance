@@ -187,6 +187,9 @@ class Scene {
             } else if constexpr (std::is_base_of_v<Light, T>) {
                 raw->setShader(_billboardShader.get());
                 raw->setTextures(_lightIcon, _lightIconSelected);
+                if (PointLight* pointLight = dynamic_cast<PointLight*>(raw)) {
+                    pointLight->setAtlasIndex(_pointAtlasIndex++);
+                }
                 _lights.push_back(raw);
             }
 
@@ -268,6 +271,7 @@ class Scene {
         std::unique_ptr<Shader> _gpuSelectShader;
         std::unique_ptr<Shader> _depthPointShader;
 
+        unsigned int _pointAtlasIndex = 0;
         std::unique_ptr<PointShadowAtlas> _pointShadowAtlas;
 
         unsigned int _lightIcon, _lightIconSelected;
@@ -333,7 +337,7 @@ class Scene {
             _depthPointShader->setVec3("lightPosition", light->getTransform().position);
 
             for (int i = 0; i < 6; i++) {
-                glm::ivec4 viewport = _pointShadowAtlas->getViewport(lightIndex, i);
+                glm::ivec4 viewport = _pointShadowAtlas->getViewport(light->getAtlasIndex(), i);
                 glViewport(viewport.x, viewport.y, viewport.z, viewport.w);
 
                 _depthPointShader->setMat4("shadowMatrix", shadowTransforms[i]);
