@@ -261,6 +261,11 @@ class Scene {
             return std::isdigit(name[name.size() - 3]) && std::isdigit(name[name.size() - 2]) && std::isdigit(name[name.size() - 1]);
         }
 
+        void saveShadowAtlases() {
+            _pointShadowAtlas->saveShadowAtlas("pointShadowAtlas.png");
+            _shadowAtlas->saveShadowAtlas("dirSpotShadowAtlas.png");
+        }
+
         bool _showGrid = true;
     private:
         std::unordered_map<int, std::unique_ptr<Entity>> _entities;

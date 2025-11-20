@@ -526,6 +526,9 @@ class Application {
 
             if (ImGui::BeginMainMenuBar()) {
                 if (ImGui::BeginMenu("Options")) {
+                    if (ImGui::MenuItem("Save shadow atlases")) {
+                        _scene->saveShadowAtlases();
+                    }
                     ImGui::MenuItem("Show grid", NULL, &_scene->_showGrid);
                     ImGui::EndMenu();
                 }
