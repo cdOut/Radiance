@@ -61,5 +61,6 @@ file(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_executable(raycast-thesis ${SRC_FILES})
 target_include_directories(raycast-thesis PRIVATE include)
 target_link_libraries(raycast-thesis PRIVATE imgui glm stb_image)
+target_compile_options(stb_image PRIVATE -Wno-deprecated-declarations)
 
 file(COPY assets/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets)
