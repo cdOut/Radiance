@@ -20,13 +20,6 @@ class Scene {
             initialize();
         }
 
-        void reset() {
-            _entities.clear();
-            _camera = nullptr;
-            _grid = nullptr;
-            initialize();
-        }
-
         void update(float deltaTime, const glm::vec2& moveVector, const glm::vec2& lookDelta, bool isRightButtonDown) {
             if (_camera && isRightButtonDown) {
                 _camera->handleMove(moveVector, deltaTime);
@@ -43,14 +36,26 @@ class Scene {
             glClearDepth(1.0f);
             glClear(GL_DEPTH_BUFFER_BIT);
             
-            int index = 0;
             for (Light* light : _lights) {
                 if (PointLight* pointLight = dynamic_cast<PointLight*>(light)) {
-                    renderShadowPointPass(pointLight, index++);
+                    renderShadowPointPass(pointLight);
                 }
             }
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, _shadowAtlas->getDepthMapFBO());
+            glViewport(0, 0, 4096, 4096);
+            glClearDepth(1.0f);
+            glClear(GL_DEPTH_BUFFER_BIT);
+
+            for (Light* light : _lights) {
+                if (dynamic_cast<DirectionalLight*>(light) || dynamic_cast<SpotLight*>(light))
+                    renderShadowDirSpotPass(light);
+            }
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
             glViewport(0, 0, viewportWidth, viewportHeight);
         }
 
@@ -187,8 +192,10 @@ class Scene {
             } else if constexpr (std::is_base_of_v<Light, T>) {
                 raw->setShader(_billboardShader.get());
                 raw->setTextures(_lightIcon, _lightIconSelected);
-                if (PointLight* pointLight = dynamic_cast<PointLight*>(raw)) {
-                    pointLight->setAtlasIndex(_pointAtlasIndex++);
+                if (dynamic_cast<PointLight*>(raw)) {
+                    raw->setAtlasIndex(_pointAtlasIndex++);
+                } else if (dynamic_cast<SpotLight*>(raw) || dynamic_cast<DirectionalLight*>(raw)) {
+                    raw->setAtlasIndex(_shadowAtlasIndex++);
                 }
                 _lights.push_back(raw);
             }
@@ -274,6 +281,9 @@ class Scene {
         unsigned int _pointAtlasIndex = 0;
         std::unique_ptr<PointShadowAtlas> _pointShadowAtlas;
 
+        unsigned int _shadowAtlasIndex = 0;
+        std::unique_ptr<ShadowAtlas> _shadowAtlas;
+
         unsigned int _lightIcon, _lightIconSelected;
 
         unsigned int loadTexture(std::string path) {
@@ -303,6 +313,7 @@ class Scene {
 
         void initialize() {
             _pointShadowAtlas = std::make_unique<PointShadowAtlas>();
+            _shadowAtlas = std::make_unique<ShadowAtlas>();
 
             _gridShader = std::make_unique<Shader>("assets/shaders/grid.vs", "assets/shaders/grid.fs");
             _meshShader = std::make_unique<Shader>("assets/shaders/default.vs", "assets/shaders/lit.fs");
@@ -327,7 +338,36 @@ class Scene {
             _lightIconSelected = loadTexture("assets/textures/lightbulb.png");
         }
 
-        void renderShadowPointPass(PointLight* light, int lightIndex) {
+        void renderShadowDirSpotPass(Light* light) {
+            if (!dynamic_cast<DirectionalLight*>(light) && !dynamic_cast<SpotLight*>(light))
+                return;
+
+            glm::mat4 lightSpaceMatrix;
+            if (SpotLight* spot = dynamic_cast<SpotLight*>(light)) {
+                lightSpaceMatrix = spot->getLightSpaceMatrix();
+            } else if (DirectionalLight* dir = dynamic_cast<DirectionalLight*>(light)) {
+                lightSpaceMatrix = dir->getLightSpaceMatrix();
+            }
+
+            _depthPointShader->use();
+            _depthPointShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+            _depthPointShader->setBool("isPointLight", false);
+
+            glm::ivec4 viewport = _shadowAtlas->getViewport(light->getAtlasIndex());
+            glViewport(viewport.x, viewport.y, viewport.z, viewport.w);
+
+            for (const auto& [_, e] : _entities) {
+                if (e.get() == _camera || e.get() == _grid)
+                    continue;
+                if (Mesh* mesh = dynamic_cast<Mesh*>(e.get())) {
+                    glm::mat4 model = mesh->getModelMatrix();
+                    _depthPointShader->setMat4("model", model);
+                    mesh->renderGeometry();
+                }
+            }
+        }
+
+        void renderShadowPointPass(PointLight* light) {
             float farPlane;
             std::vector<glm::mat4> shadowTransforms;
             light->getDepthShaderData(farPlane, shadowTransforms);
@@ -335,6 +375,7 @@ class Scene {
             _depthPointShader->use();
             _depthPointShader->setFloat("farPlane", farPlane);
             _depthPointShader->setVec3("lightPosition", light->getTransform().position);
+            _depthPointShader->setBool("isPointLight", true);
 
             for (int i = 0; i < 6; i++) {
                 glm::ivec4 viewport = _pointShadowAtlas->getViewport(light->getAtlasIndex(), i);
@@ -376,6 +417,10 @@ class Scene {
             shader->setInt("directionalLightsAmount", dirIndex);
             shader->setInt("pointLightsAmount", pointIndex);
             shader->setInt("spotLightsAmount", spotIndex);
+
+            shader->setInt("shadowAtlas", 11);
+            glActiveTexture(GL_TEXTURE11);
+            glBindTexture(GL_TEXTURE_2D, _shadowAtlas->getDepthAtlas());
 
             shader->setInt("pointShadowAtlas", 10);
             glActiveTexture(GL_TEXTURE10);

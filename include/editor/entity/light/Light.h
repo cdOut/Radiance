@@ -51,11 +51,16 @@ class Light : public Entity {
 
             _billboard.render(model);
         }
+
+        int getAtlasIndex() const { return _atlasIndex; }
+        void setAtlasIndex(int index) { _atlasIndex = index; }
     protected:
         Billboard _billboard;
         LightType _type;
 
         unsigned int _texture, _selectedTexture;
+
+        int _atlasIndex = -1;
 
         glm::vec3 _color{1.0f, 1.0f, 1.0f};
         float _intensity = 1.0f;
@@ -119,7 +124,25 @@ class DirectionalLight : public Light {
 
             shader->setVec3(arrayString + ".direction", getForwardVector());
             shader->setVec3(arrayString + ".color", _color * _intensity);
+
+            shader->setInt(arrayString + ".atlasIndex", _atlasIndex);
+            shader->setMat4(arrayString + ".lightSpaceMatrix", getLightSpaceMatrix());
         };
+
+        glm::mat4 getLightSpaceMatrix() {
+            float nearPlane = 1.0f;
+            float farPlane = 50.0f;
+            float orthoSize = 5.0f;
+
+            glm::mat4 lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
+
+            glm::vec3 lightDir = glm::normalize(getForwardVector());
+            glm::vec3 lightPos = -lightDir * 25.0f;
+
+            glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+            return lightProjection * lightView;
+        }
     protected:
         unsigned int _VAO, _VBO;
         glm::vec3 _vertices[4];
@@ -127,14 +150,7 @@ class DirectionalLight : public Light {
 
 class PointLight : public Light {
     public:
-        PointLight() : Light(LightType::Point) {
-            createDepthCubemap();
-        }
-
-        ~PointLight() {
-            if (_depthMapFBO) glDeleteFramebuffers(1, &_depthMapFBO);
-            if (_depthCubemap) glDeleteTextures(1, &_depthCubemap);
-        }
+        PointLight() : Light(LightType::Point) {}
 
         virtual void uploadToShader(Shader* shader, int index) override {
             std::string arrayString = "pointLights[" + std::to_string(index) + "]";
@@ -165,11 +181,6 @@ class PointLight : public Light {
             shadowTransforms.push_back(shadowProjection * glm::lookAt(lightPosition, lightPosition + glm::vec3( 0.0, 0.0, 1.0), glm::vec3(0.0,-1.0, 0.0)));
             shadowTransforms.push_back(shadowProjection * glm::lookAt(lightPosition, lightPosition + glm::vec3( 0.0, 0.0,-1.0), glm::vec3(0.0,-1.0, 0.0)));
         }
-
-        int getAtlasIndex() const { return _atlasIndex; }
-        void setAtlasIndex(float index) { _atlasIndex = index; }
-
-        unsigned int _depthMapFBO, _depthCubemap;
     protected:
         float _constant = 1.0f;
         float _linear = 0.09f;
@@ -177,31 +188,6 @@ class PointLight : public Light {
 
         float _nearPlane = 1.0f;
         float _farPlane = 25.0f;
-
-        float _atlasIndex;
-
-        void createDepthCubemap() {
-            glGenFramebuffers(1, &_depthMapFBO);
-            glGenTextures(1, &_depthCubemap);
-
-            glBindTexture(GL_TEXTURE_CUBE_MAP, _depthCubemap);
-            for (int i = 0; i < 6; i++) {
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT32F, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-            }
-
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-            glBindFramebuffer(GL_FRAMEBUFFER, _depthMapFBO);
-            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, _depthCubemap, 0);
-            glDrawBuffer(GL_NONE);
-            glReadBuffer(GL_NONE);
-            
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        }
 };
 
 class SpotLight : public Light {
@@ -224,7 +210,17 @@ class SpotLight : public Light {
 
             shader->setFloat(arrayString + ".cutOff", cosf(cutOff));
             shader->setFloat(arrayString + ".outerCutOff", cosf(outerCutOff));
+
+            shader->setInt(arrayString + ".atlasIndex", _atlasIndex);
+            shader->setMat4(arrayString + ".lightSpaceMatrix", getLightSpaceMatrix());
         };
+
+        glm::mat4 getLightSpaceMatrix() {
+            glm::mat4 lightProjection = glm::perspective(glm::radians(_size), 1.0f, 0.1f, 100.0f);
+            glm::mat4 lightView = glm::lookAt(_transform.position, _transform.position + getForwardVector(), glm::vec3(0.0f, 1.0f, 0.0f));
+
+            return lightProjection * lightView;
+        }
 
         float& getSize() { return _size; }
         float& getBlend() { return _blend; }

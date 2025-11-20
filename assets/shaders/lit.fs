@@ -8,6 +8,9 @@ out vec4 FragColor;
 struct DirectionalLight {
     vec3 color;
     vec3 direction;
+
+    int atlasIndex;
+    mat4 lightSpaceMatrix;
 };
 
 struct PointLight {
@@ -32,6 +35,9 @@ struct SpotLight {
     float constant;
     float linear;
     float quadratic;
+
+    int atlasIndex;
+    mat4 lightSpaceMatrix;
 };
 
 uniform vec3 viewPos;
@@ -52,6 +58,7 @@ uniform PointLight pointLights[MAX_POINT_LIGHTS];
 uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 
 uniform sampler2D pointShadowAtlas;
+uniform sampler2D shadowAtlas;
 
 #define PI 3.14159265359
 
@@ -148,6 +155,50 @@ float calculatePointShadow(PointLight light, vec3 fragPos) {
     return currentDepth - bias > closestDepth ? 1.0 : 0.0;
 }
 
+float calculateDirShadow(DirectionalLight light, vec3 fragPos) {
+    vec4 lightSpacePos = light.lightSpaceMatrix * vec4(fragPos, 1.0);
+    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+
+    if (projCoords.z > 1.0)
+        return 0.0;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    float tilesPerRow = 8.0;
+    float tileSize = 1.0 / tilesPerRow;
+    float xOff = float(light.atlasIndex % int(tilesPerRow)) * tileSize;
+    float yOff = float(light.atlasIndex / int(tilesPerRow)) * tileSize;
+    projCoords.xy = projCoords.xy * tileSize + vec2(xOff, yOff);
+
+    float closestDepth = texture(shadowAtlas, projCoords.xy).r;
+    float currentDepth = projCoords.z;
+
+    float bias = 0.005;
+
+    return currentDepth - bias > closestDepth ? 1.0 : 0.0;
+}
+
+float calculateSpotShadow(SpotLight light, vec3 fragPos) {
+    vec4 lightSpacePos = light.lightSpaceMatrix * vec4(fragPos, 1.0);
+    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+
+    if (projCoords.z > 1.0)
+        return 0.0;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    float tilesPerRow = 8.0;
+    float tileSize = 1.0 / tilesPerRow;
+    float xOff = float(light.atlasIndex % int(tilesPerRow)) * tileSize;
+    float yOff = float(light.atlasIndex / int(tilesPerRow)) * tileSize;
+    projCoords.xy = projCoords.xy * tileSize + vec2(xOff, yOff);
+
+    float closestDepth = texture(shadowAtlas, projCoords.xy).r;
+    float currentDepth = projCoords.z;
+
+    float bias = 0.005;
+
+    return currentDepth - bias > closestDepth ? 1.0 : 0.0;
+}
+
 void main() {
     vec3 N = normalize(Normal);
     vec3 V = normalize(viewPos - FragPos);
@@ -159,7 +210,9 @@ void main() {
         vec3 L = normalize(-directionalLights[i].direction);
         vec3 radiance = directionalLights[i].color;
 
-        Lo += calculatePBR(N, V, L, radiance, albedo, metallic, roughness);
+        float shadow = calculateDirShadow(directionalLights[i], FragPos);
+
+        Lo += (1.0 - shadow) * calculatePBR(N, V, L, radiance, albedo, metallic, roughness);
     }
 
     // point lights
@@ -189,7 +242,9 @@ void main() {
 
         vec3 radiance = spotLights[i].color * attenuation * intensity;
 
-        Lo += calculatePBR(N, V, L, radiance, albedo, metallic, roughness);
+        float shadow = calculateSpotShadow(spotLights[i], FragPos);
+
+        Lo += (1.0 - shadow) * calculatePBR(N, V, L, radiance, albedo, metallic, roughness);
     }
 
     vec3 color = Lo;
