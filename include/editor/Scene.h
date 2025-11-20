@@ -50,6 +50,7 @@ class Scene {
                 }
             }
 
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glViewport(0, 0, viewportWidth, viewportHeight);
         }
 
@@ -347,8 +348,6 @@ class Scene {
                     }
                 }
             }
-
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
         void uploadLightsToShader(Shader* shader) {

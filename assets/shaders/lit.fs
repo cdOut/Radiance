@@ -133,7 +133,7 @@ float calculatePointShadow(PointLight light, vec3 fragPos) {
     uv = uv * 0.5 + 0.5;
 
     int tileIndex = light.atlasIndex + face;
-    float tilesPerRow = 16.0;
+    float tilesPerRow = 8.0;
     float tileSize = 1.0 / tilesPerRow;
 
     float x = float(tileIndex % int(tilesPerRow)) * tileSize;
