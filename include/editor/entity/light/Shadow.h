@@ -50,8 +50,8 @@ class ShadowAtlas {
             return _depthAtlas;
         }
 
-        void saveShadowAtlas(const char* filename) {
-            if (!_depthAtlas) return;
+        unsigned char* getShadowAtlasData() {
+            if (!_depthAtlas) return nullptr;
 
             glBindTexture(GL_TEXTURE_2D, _depthAtlas);
 
@@ -61,13 +61,11 @@ class ShadowAtlas {
             unsigned char* imageData = new unsigned char[_atlasSize * _atlasSize];
             for (int i = 0; i < _atlasSize * _atlasSize; i++) {
                 float d = depthData[i];
-                imageData[i] = (unsigned char)(255.0f * d);  
+                imageData[i] = static_cast<unsigned char>(255.0f * d);
             }
 
-            stbi_write_png(filename, _atlasSize, _atlasSize, 1, imageData, _atlasSize);
-
             delete[] depthData;
-            delete[] imageData;
+            return imageData;
         }
     private:
         const int _atlasSize = 4096;
@@ -122,8 +120,8 @@ class PointShadowAtlas {
             return _depthAtlas;
         }
 
-        void saveShadowAtlas(const char* filename) {
-            if (!_depthAtlas) return;
+        unsigned char* getShadowAtlasData() {
+            if (!_depthAtlas) return nullptr;
 
             glBindTexture(GL_TEXTURE_2D, _depthAtlas);
 
@@ -133,13 +131,11 @@ class PointShadowAtlas {
             unsigned char* imageData = new unsigned char[_atlasSize * _atlasSize];
             for (int i = 0; i < _atlasSize * _atlasSize; i++) {
                 float d = depthData[i];
-                imageData[i] = (unsigned char)(255.0f * d);  
+                imageData[i] = static_cast<unsigned char>(255.0f * d);
             }
 
-            stbi_write_png(filename, _atlasSize, _atlasSize, 1, imageData, _atlasSize);
-
             delete[] depthData;
-            delete[] imageData;
+            return imageData;
         }
     private:
         const int _atlasSize = 4096;

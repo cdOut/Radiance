@@ -267,11 +267,14 @@ class Scene {
         void saveShadowAtlases() {
             if (_shadowAtlasesSavingInProgress)
                 return;
+
+            unsigned char* pointData = _pointShadowAtlas->getShadowAtlasData();
+            unsigned char* shadowData = _shadowAtlas->getShadowAtlasData();
             
-            _shadowAtlasesSavingThread = std::thread([this]() {
+            _shadowAtlasesSavingThread = std::thread([this, pointData, shadowData]() {
                 _shadowAtlasesSavingInProgress = true;
-                _pointShadowAtlas->saveShadowAtlas("pointShadowAtlas.png");
-                _shadowAtlas->saveShadowAtlas("dirSpotShadowAtlas.png");
+                stbi_write_png("pointShadowAtlas.png", 4096, 4096, 1, pointData, 4096);
+                stbi_write_png("dirSpotShadowAtlas.png", 4096, 4096, 1, shadowData, 4096);
                 _shadowAtlasesSavingInProgress = false;
             });
             _shadowAtlasesSavingThread.detach();
