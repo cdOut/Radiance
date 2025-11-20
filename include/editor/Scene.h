@@ -14,6 +14,9 @@
 #include "entity/mesh/Mesh.h"
 #include "entity/light/Shadow.h"
 
+#include <thread>
+#include <atomic>
+
 class Scene {
     public:
         Scene() {
@@ -262,8 +265,16 @@ class Scene {
         }
 
         void saveShadowAtlases() {
-            _pointShadowAtlas->saveShadowAtlas("pointShadowAtlas.png");
-            _shadowAtlas->saveShadowAtlas("dirSpotShadowAtlas.png");
+            if (_shadowAtlasesSavingInProgress)
+                return;
+            
+            _shadowAtlasesSavingThread = std::thread([this]() {
+                _shadowAtlasesSavingInProgress = true;
+                _pointShadowAtlas->saveShadowAtlas("pointShadowAtlas.png");
+                _shadowAtlas->saveShadowAtlas("dirSpotShadowAtlas.png");
+                _shadowAtlasesSavingInProgress = false;
+            });
+            _shadowAtlasesSavingThread.detach();
         }
 
         bool _showGrid = true;
@@ -290,6 +301,9 @@ class Scene {
         std::unique_ptr<ShadowAtlas> _shadowAtlas;
 
         unsigned int _lightIcon, _lightIconSelected;
+
+        std::thread _shadowAtlasesSavingThread;
+        std::atomic<bool> _shadowAtlasesSavingInProgress = false;
 
         unsigned int loadTexture(std::string path) {
             unsigned int texture;
