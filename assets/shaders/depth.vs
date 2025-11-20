@@ -2,8 +2,12 @@
 
 layout (location = 0) in vec3 aPos;
 
+out vec3 FragPos;
+
 uniform mat4 model;
+uniform mat4 shadowMatrix;
 
 void main() {
-    gl_Position = model * vec4(aPos, 1.0);
+    FragPos = (model * vec4(aPos, 1.0)).xyz;
+    gl_Position = shadowMatrix * model * vec4(aPos, 1.0);
 }

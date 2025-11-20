@@ -12,6 +12,7 @@
 #include "entity/util/Grid.h"
 #include "entity/light/Light.h"
 #include "entity/mesh/Mesh.h"
+#include "entity/light/Shadow.h"
 
 class Scene {
     public:
@@ -37,11 +38,15 @@ class Scene {
         }
 
         void renderShadowPass(int viewportWidth, int viewportHeight) {
-            glViewport(0, 0, 1024, 1024);
+            glBindFramebuffer(GL_FRAMEBUFFER, _pointShadowAtlas->getDepthMapFBO());
+            glViewport(0, 0, 4096, 4096);
+            glClearDepth(1.0f);
+            glClear(GL_DEPTH_BUFFER_BIT);
             
+            int index = 0;
             for (Light* light : _lights) {
                 if (PointLight* pointLight = dynamic_cast<PointLight*>(light)) {
-                    renderShadowPointPass(pointLight);
+                    renderShadowPointPass(pointLight, index++);
                 }
             }
 
@@ -260,7 +265,9 @@ class Scene {
         std::unique_ptr<Shader> _outlineShader;
         std::unique_ptr<Shader> _billboardShader;
         std::unique_ptr<Shader> _gpuSelectShader;
-        std::unique_ptr<Shader> _depthCubeShader;
+        std::unique_ptr<Shader> _depthPointShader;
+
+        std::unique_ptr<PointShadowAtlas> _pointShadowAtlas;
 
         unsigned int _lightIcon, _lightIconSelected;
 
@@ -290,12 +297,14 @@ class Scene {
         }
 
         void initialize() {
+            _pointShadowAtlas = std::make_unique<PointShadowAtlas>();
+
             _gridShader = std::make_unique<Shader>("assets/shaders/grid.vs", "assets/shaders/grid.fs");
             _meshShader = std::make_unique<Shader>("assets/shaders/default.vs", "assets/shaders/lit.fs");
             _outlineShader = std::make_unique<Shader>("assets/shaders/default.vs", "assets/shaders/unlit.fs");
             _billboardShader = std::make_unique<Shader>("assets/shaders/billboard.vs", "assets/shaders/billboard.fs");
             _gpuSelectShader = std::make_unique<Shader>("assets/shaders/gpuSelect.vs", "assets/shaders/gpuSelect.fs");
-            _depthCubeShader = std::make_unique<Shader>("assets/shaders/depth.vs", "assets/shaders/depth.fs", "assets/shaders/depth.gs");
+            _depthPointShader = std::make_unique<Shader>("assets/shaders/depth.vs", "assets/shaders/depth.fs");
 
             _meshShader->use();
 
@@ -313,28 +322,29 @@ class Scene {
             _lightIconSelected = loadTexture("assets/textures/lightbulb.png");
         }
 
-        void renderShadowPointPass(PointLight* light) {
+        void renderShadowPointPass(PointLight* light, int lightIndex) {
             float farPlane;
             std::vector<glm::mat4> shadowTransforms;
             light->getDepthShaderData(farPlane, shadowTransforms);
 
-            _depthCubeShader->use();
+            _depthPointShader->use();
+            _depthPointShader->setFloat("farPlane", farPlane);
+            _depthPointShader->setVec3("lightPosition", light->getTransform().position);
+
             for (int i = 0; i < 6; i++) {
-                _depthCubeShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-            }
-            _depthCubeShader->setFloat("farPlane", farPlane);
-            _depthCubeShader->setVec3("lightPosition", light->getTransform().position);
+                glm::ivec4 viewport = _pointShadowAtlas->getViewport(lightIndex, i);
+                glViewport(viewport.x, viewport.y, viewport.z, viewport.w);
 
-            glBindFramebuffer(GL_FRAMEBUFFER, light->_depthMapFBO);
-            glClear(GL_DEPTH_BUFFER_BIT);
+                _depthPointShader->setMat4("shadowMatrix", shadowTransforms[i]);
 
-            for (const auto& [_, e] : _entities) {
-                if (e.get() == _camera || e.get() == _grid)
-                    continue;
-                if (Mesh* mesh = dynamic_cast<Mesh*>(e.get())) {
-                    glm::mat4 model = mesh->getModelMatrix();
-                    _depthCubeShader->setMat4("model", model);
-                    mesh->renderGeometry();
+                for (const auto& [_, e] : _entities) {
+                    if (e.get() == _camera || e.get() == _grid)
+                        continue;
+                    if (Mesh* mesh = dynamic_cast<Mesh*>(e.get())) {
+                        glm::mat4 model = mesh->getModelMatrix();
+                        _depthPointShader->setMat4("model", model);
+                        mesh->renderGeometry();
+                    }
                 }
             }
 
@@ -363,6 +373,10 @@ class Scene {
             shader->setInt("directionalLightsAmount", dirIndex);
             shader->setInt("pointLightsAmount", pointIndex);
             shader->setInt("spotLightsAmount", spotIndex);
+
+            shader->setInt("pointShadowAtlas", 10);
+            glActiveTexture(GL_TEXTURE10);
+            glBindTexture(GL_TEXTURE_2D, _pointShadowAtlas->getDepthAtlas());
         }
 };
 

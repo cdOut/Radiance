@@ -146,11 +146,8 @@ class PointLight : public Light {
             shader->setFloat(arrayString + ".linear", _linear);
             shader->setFloat(arrayString + ".quadratic", _quadratic);
 
-            shader->setInt(arrayString + ".shadowMap", index);
+            shader->setInt(arrayString + ".atlasIndex", index * 6);
             shader->setFloat(arrayString + ".farPlane", _farPlane);
-
-            glActiveTexture(GL_TEXTURE0 + index);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, _depthCubemap);
         };
 
         void getDepthShaderData(float& farPlane, std::vector<glm::mat4>& shadowTransforms) {

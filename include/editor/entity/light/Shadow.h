@@ -1,0 +1,61 @@
+#ifndef SHADOW_H
+#define SHADOW_H
+
+#include <glad/glad.h>
+#include <glm/glm.hpp>
+
+class PointShadowAtlas {
+    public:
+        PointShadowAtlas() {
+            glGenFramebuffers(1, &_depthMapFBO);
+            glGenTextures(1, &_depthAtlas);
+
+            glBindTexture(GL_TEXTURE_2D, _depthAtlas);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, _atlasSize, _atlasSize, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, _depthMapFBO);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthAtlas, 0);
+
+            glDrawBuffer(GL_NONE);
+            glReadBuffer(GL_NONE);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        ~PointShadowAtlas() {
+            if (_depthMapFBO) glDeleteFramebuffers(1, &_depthMapFBO);
+            if (_depthAtlas) glDeleteTextures(1, &_depthAtlas);
+        }
+
+        glm::ivec4 getViewport(int lightIndex, int face) const {
+            int tileSize = _atlasSize / 16;
+            int tileIndex = lightIndex * 6 + face;
+
+            int x = (tileIndex % 16) * tileSize;
+            int y = (tileIndex / 16) * tileSize;
+
+            return glm::ivec4(x, y, tileSize, tileSize);
+        }
+
+        unsigned int getDepthMapFBO() const {
+            return _depthMapFBO;
+        }
+
+        unsigned int getDepthAtlas() const {
+            return _depthAtlas;
+        }
+    private:
+        const int _atlasSize = 4096;
+        const int _faces = 6;
+        const int _maxPointLights = 32;
+
+        unsigned int _depthMapFBO;
+        unsigned int _depthAtlas;
+};
+
+#endif

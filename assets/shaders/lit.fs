@@ -18,7 +18,7 @@ struct PointLight {
     float linear;
     float quadratic;
 
-    samplerCube shadowMap;
+    int atlasIndex;
     float farPlane;
 };
 
@@ -50,6 +50,8 @@ uniform int spotLightsAmount;
 uniform DirectionalLight directionalLights[MAX_DIRECTIONAL_LIGHTS];
 uniform PointLight pointLights[MAX_POINT_LIGHTS];
 uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
+
+uniform sampler2D pointShadowAtlas;
 
 #define PI 3.14159265359
 
@@ -106,32 +108,44 @@ vec3 calculatePBR(vec3 N, vec3 V, vec3 L, vec3 radiance, vec3 albedo, float meta
 }
 
 float calculatePointShadow(PointLight light, vec3 fragPos) {
-    vec3 sampleOffsetDirections[20] = vec3[] (
-        vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
-        vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
-        vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
-        vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
-        vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
-    );
+    vec3 lightToFrag = fragPos - light.position;
+    float currentDepth = length(lightToFrag);
 
-    vec3 fragToLight = fragPos - light.position;
-    float currentDepth = length(fragToLight);
+    vec3 L = normalize(lightToFrag);
+    int face;
+    float absX = abs(L.x), absY = abs(L.y), absZ = abs(L.z);
 
-    float shadow = 0.0;
-    float bias   = 0.15;
-    int samples  = 20;
-    float viewDistance = length(viewPos - fragPos);
-    float diskRadius = (1.0 + (viewDistance / light.farPlane)) / 25.0;
-    for(int i = 0; i < samples; ++i)
-    {
-        float closestDepth = texture(light.shadowMap, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
-        closestDepth *= light.farPlane;
-        if(currentDepth - bias > closestDepth)
-            shadow += 1.0;
-    }
-    shadow /= float(samples);
+    if (absX > absY && absX > absZ)
+        face = L.x > 0 ? 0 : 1;
+    else if (absY > absX && absY > absZ)
+        face = L.y > 0 ? 2 : 3;
+    else
+        face = L.z > 0 ? 4 : 5;
 
-    return shadow;
+    vec2 uv;
+    if (face == 0) uv = vec2(-L.z, -L.y) / abs(L.x);
+    else if (face == 1) uv = vec2( L.z, -L.y) / abs(L.x);
+    else if (face == 2) uv = vec2( L.x,  L.z) / abs(L.y);
+    else if (face == 3) uv = vec2( L.x, -L.z) / abs(L.y);
+    else if (face == 4) uv = vec2( L.x, -L.y) / abs(L.z);
+    else uv = vec2(-L.x, -L.y) / abs(L.z);
+
+    uv = uv * 0.5 + 0.5;
+
+    int tileIndex = light.atlasIndex + face;
+    float tilesPerRow = 16.0;
+    float tileSize = 1.0 / tilesPerRow;
+
+    float x = float(tileIndex % int(tilesPerRow)) * tileSize;
+    float y = float(tileIndex / int(tilesPerRow)) * tileSize;
+
+    uv = vec2(x + uv.x * tileSize, y + uv.y * tileSize);
+
+    float closestDepth = texture(pointShadowAtlas, uv).r;
+    closestDepth *= light.farPlane;
+
+    float bias = 0.05;
+    return currentDepth - bias > closestDepth ? 1.0 : 0.0;
 }
 
 void main() {
