@@ -24,6 +24,31 @@ inline float randomFloat(float min, float max) {
     return min + (max - min) * randomFloat();
 }
 
+inline glm::vec3 randomVec3() {
+    return glm::vec3(randomFloat(), randomFloat(), randomFloat());
+}
+
+inline glm::vec3 randomVec3(float min, float max) {
+    return glm::vec3(randomFloat(min, max), randomFloat(min, max), randomFloat(min, max));
+}
+
+inline glm::vec3 randomUnitVector() {
+    while (true) {
+        glm::vec3 p = randomVec3(-1.0f, 1.0f);
+        float lensq = glm::dot(p, p);
+        if (1e-160 < lensq && lensq <= 1)
+            return p / std::sqrt(lensq);
+    }
+}
+
+inline glm::vec3 randomOnHemisphere(const glm::vec3& normal) {
+    glm::vec3 onUnitSphere = randomUnitVector();
+    if (glm::dot(onUnitSphere, normal) > 0.0f)
+        return onUnitSphere;
+    else
+        return -onUnitSphere;
+}
+
 using Color = glm::vec3;
 
 #endif

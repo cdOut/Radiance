@@ -90,7 +90,8 @@ class RayCamera {
         Color rayColor(const Ray& ray, const Hittable& world) const {
             HitRecord rec;
             if (world.hit(ray, Interval(0, infinity), rec)) {
-                return 0.5f * (rec.normal + Color(1.0f, 1.0f, 1.0f));
+                glm::vec3 direction = randomOnHemisphere(rec.normal);
+                return 0.5f * rayColor(Ray(rec.point, direction), world);
             }
 
             glm::vec3 unitDirection = glm::normalize(ray.direction());
