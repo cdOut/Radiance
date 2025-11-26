@@ -134,7 +134,7 @@ class Application {
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
                 if (_raytraceFinished) {
-                    _renderId = Raytracer::uploadRender(_renderData.data(), 1920, 1080);
+                    _renderId = Raytracer::uploadRender(_renderData.data());
                     _raytraceFinished = false;
                 }
 

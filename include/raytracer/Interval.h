@@ -23,6 +23,12 @@ class Interval {
             return _min < value && value < _max;
         }
 
+        float clamp(float value) const {
+            if (value < _min) return _min;
+            if (value > _max) return _max;
+            return value;
+        }
+
         float& min() { return _min; }
         float& max() { return _max; }
 

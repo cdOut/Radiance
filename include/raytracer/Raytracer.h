@@ -11,18 +11,17 @@
 class Raytracer {
     public:
         static std::vector<unsigned char> raytrace() {
-            HittableList world;
-            world.add(std::make_shared<RaySphere>(glm::vec3(0, 0, -1), 0.5f));
-            world.add(std::make_shared<RaySphere>(glm::vec3(0, -100.5, -1), 100.0f));
+            _world.add(std::make_shared<RaySphere>(glm::vec3(0, 0, -1), 0.5f));
+            _world.add(std::make_shared<RaySphere>(glm::vec3(0, -100.5, -1), 100.0f));
 
-            RayCamera camera;
-            camera.aspectRatio() = 16.0 / 9.0;
-            camera.imageWidth() = 1920;
+            _camera.aspectRatio() = 16.0 / 9.0;
+            _camera.imageWidth() = 400;
+            _camera.samplesPerPixel() = 100;
 
-            return camera.render(world);
+            return _camera.render(_world);
         }
 
-        static unsigned int uploadRender(const unsigned char* data, int width, int height) {
+        static unsigned int uploadRender(const unsigned char* data) {
             static unsigned int renderId = 0;
 
             if (!renderId)
@@ -30,7 +29,7 @@ class Raytracer {
 
             glBindTexture(GL_TEXTURE_2D, renderId);
 
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _camera.imageWidth(), _camera.imageHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -39,6 +38,9 @@ class Raytracer {
 
             return renderId;
         }
+    private:
+        inline static HittableList _world;
+        inline static RayCamera _camera;
 };
 
 #endif
