@@ -15,8 +15,9 @@ class Raytracer {
             _world.add(std::make_shared<RaySphere>(glm::vec3(0, -100.5, -1), 100.0f));
 
             _camera.aspectRatio() = 16.0 / 9.0;
-            _camera.imageWidth() = 400;
+            _camera.imageWidth() = 1920;
             _camera.samplesPerPixel() = 100;
+            _camera.maxDepth() = 50;
 
             return _camera.render(_world);
         }

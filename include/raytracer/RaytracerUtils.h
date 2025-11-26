@@ -49,6 +49,13 @@ inline glm::vec3 randomOnHemisphere(const glm::vec3& normal) {
         return -onUnitSphere;
 }
 
+inline float linearToGamma(float linearComponent) {
+    if (linearComponent > 0)
+        return std::sqrt(linearComponent);
+
+    return 0.0f;
+}
+
 using Color = glm::vec3;
 
 #endif

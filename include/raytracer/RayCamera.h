@@ -14,9 +14,13 @@ class RayCamera {
                     Color pixelColor(0.0f, 0.0f, 0.0f);
                     for (int sample = 0; sample < _samplesPerPixel; sample++) {
                         Ray ray = getRay(i, j);
-                        pixelColor += rayColor(ray, world);
+                        pixelColor += rayColor(ray, _maxDepth, world);
                     }
                     pixelColor *= _pixelSamplesScale;
+
+                    pixelColor.x = linearToGamma(pixelColor.x);
+                    pixelColor.y = linearToGamma(pixelColor.y);
+                    pixelColor.z = linearToGamma(pixelColor.z);
 
                     int index = (j * _imageWidth + i) * 3;
                     static const Interval intensity(0.0f, 0.999f);
@@ -34,10 +38,12 @@ class RayCamera {
         int& imageWidth() { return _imageWidth; }
         int& imageHeight() { return _imageHeight; }
         int& samplesPerPixel() { return _samplesPerPixel; }
+        int& maxDepth() { return _maxDepth; }
     private:
         float _aspectRatio = 1.0;
         int _imageWidth = 100;
         int _samplesPerPixel = 10;
+        int _maxDepth = 10;
 
         int _imageHeight;
         float _pixelSamplesScale;
@@ -87,11 +93,14 @@ class RayCamera {
             return glm::vec3(r1 - 0.5f, r2 - 0.5f, 0);
         }
 
-        Color rayColor(const Ray& ray, const Hittable& world) const {
+        Color rayColor(const Ray& ray, int depth, const Hittable& world) const {
+            if (depth <= 0)
+                return Color(0.0f, 0.0f, 0.0f);
+
             HitRecord rec;
-            if (world.hit(ray, Interval(0, infinity), rec)) {
-                glm::vec3 direction = randomOnHemisphere(rec.normal);
-                return 0.5f * rayColor(Ray(rec.point, direction), world);
+            if (world.hit(ray, Interval(0.001, infinity), rec)) {
+                glm::vec3 direction = rec.normal + randomUnitVector();
+                return 0.5f * rayColor(Ray(rec.point, direction), depth - 1, world);
             }
 
             glm::vec3 unitDirection = glm::normalize(ray.direction());
