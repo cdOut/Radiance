@@ -280,6 +280,8 @@ class Scene {
             _shadowAtlasesSavingThread.detach();
         }
 
+        glm::vec3& getSkyboxColor() { return _skyboxColor; }
+
         bool _showGrid = true;
     private:
         std::unordered_map<int, std::unique_ptr<Entity>> _entities;
@@ -307,6 +309,8 @@ class Scene {
 
         std::thread _shadowAtlasesSavingThread;
         std::atomic<bool> _shadowAtlasesSavingInProgress = false;
+
+        glm::vec3 _skyboxColor = glm::vec3(0.1f, 0.1f, 0.1f);
 
         unsigned int loadTexture(std::string path) {
             unsigned int texture;

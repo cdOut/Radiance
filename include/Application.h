@@ -107,7 +107,8 @@ class Application {
                 glBindFramebuffer(GL_FRAMEBUFFER, _MSAAFBO);
 
                 glViewport(0, 0, (int)_viewportSize.x, (int)_viewportSize.y);
-                glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+                glm::vec3 color = _scene->getSkyboxColor();
+                glClearColor(color.r, color.g, color.b, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
                 _scene->renderShadowPass((int)_viewportSize.x, (int)_viewportSize.y);
@@ -174,6 +175,8 @@ class Application {
         std::vector<unsigned char> _renderData;
 
         std::unique_ptr<Scene> _scene;
+
+        bool _openSkyboxColorPopup = false;
 
         void initializeFramebuffer() {
             glGenFramebuffers(1, &_FBO);
@@ -529,6 +532,9 @@ class Application {
                     if (ImGui::MenuItem("Save shadow atlases")) {
                         _scene->saveShadowAtlases();
                     }
+                    if (ImGui::MenuItem("Change skybox color")) {
+                        _openSkyboxColorPopup = true;
+                    }
                     ImGui::MenuItem("Show grid", NULL, &_scene->_showGrid);
                     ImGui::EndMenu();
                 }
@@ -601,6 +607,30 @@ class Application {
             }
 
             ImGui::End();
+
+            if (_openSkyboxColorPopup) {
+                ImGui::OpenPopup("Skybox color popup");
+            }
+
+            if (ImGui::BeginPopup("Skybox color popup")) {
+                glm::vec3& skyboxColor = _scene->getSkyboxColor();
+                float color[3] = { skyboxColor.r, skyboxColor.g, skyboxColor.b };
+
+                ImGui::Text("Select skybox color");
+                ImGui::Separator();
+
+                if (ImGui::ColorPicker3("Skybox color", color)) {
+                    skyboxColor = glm::vec3(color[0], color[1], color[2]);
+                }
+
+                ImGui::Separator();
+                if (ImGui::Button("Close", ImVec2(-1, 0))) {
+                    _openSkyboxColorPopup = false;
+                    ImGui::CloseCurrentPopup();
+                }
+
+                ImGui::EndPopup();
+            }
 
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
