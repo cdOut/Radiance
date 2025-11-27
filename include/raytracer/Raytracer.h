@@ -7,15 +7,23 @@
 #include "RayCamera.h"
 #include "HittableList.h"
 #include "RaySphere.h"
+#include "RayMaterial.h"
 
 class Raytracer {
     public:
         static std::vector<unsigned char> raytrace() {
-            _world.add(std::make_shared<RaySphere>(glm::vec3(0, 0, -1), 0.5f));
-            _world.add(std::make_shared<RaySphere>(glm::vec3(0, -100.5, -1), 100.0f));
+            auto materialGround = std::make_shared<Lambertian>(Color(0.8, 0.8, 0.0));
+            auto materialCenter = std::make_shared<Lambertian>(Color(0.1, 0.2, 0.5));
+            auto materialLeft   = std::make_shared<Metal>(Color(0.8, 0.8, 0.8));
+            auto materialRight  = std::make_shared<Metal>(Color(0.8, 0.6, 0.2));
+
+            _world.add(std::make_shared<RaySphere>(glm::vec3(0, -100.5, -1), 100.0f, materialGround));
+            _world.add(std::make_shared<RaySphere>(glm::vec3(0, 0, -1.2f), 0.5f, materialCenter));
+            _world.add(std::make_shared<RaySphere>(glm::vec3(-1.0f, 0, -1.0f), 0.5f, materialLeft));
+            _world.add(std::make_shared<RaySphere>(glm::vec3(1.0f, 0, -1.0f), 0.5f, materialRight));
 
             _camera.aspectRatio() = 16.0 / 9.0;
-            _camera.imageWidth() = 1920;
+            _camera.imageWidth() = 480;
             _camera.samplesPerPixel() = 100;
             _camera.maxDepth() = 50;
 

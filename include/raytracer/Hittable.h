@@ -3,6 +3,8 @@
 
 #include "RaytracerUtils.h"
 
+class RayMaterial;
+
 class HitRecord {
     public:
         glm::vec3 point;
@@ -10,6 +12,8 @@ class HitRecord {
         float t;
 
         bool frontFace;
+
+        std::shared_ptr<RayMaterial> material;
 
         void setFaceNormal(const Ray& ray, const glm::vec3& outwardNormal) {
             frontFace = glm::dot(ray.direction(), outwardNormal) < 0;

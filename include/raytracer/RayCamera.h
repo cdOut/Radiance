@@ -2,6 +2,7 @@
 #define RAYCAMERA_H
 
 #include "Hittable.h"
+#include "RayMaterial.h"
 
 class RayCamera {
     public:
@@ -99,8 +100,12 @@ class RayCamera {
 
             HitRecord rec;
             if (world.hit(ray, Interval(0.001, infinity), rec)) {
-                glm::vec3 direction = rec.normal + randomUnitVector();
-                return 0.5f * rayColor(Ray(rec.point, direction), depth - 1, world);
+                Ray scattered;
+                Color attenuation;
+                if (rec.material->scatter(ray, rec, attenuation, scattered)) {
+                    return attenuation * rayColor(scattered, depth - 1, world);
+                }
+                return Color(0.0f);
             }
 
             glm::vec3 unitDirection = glm::normalize(ray.direction());

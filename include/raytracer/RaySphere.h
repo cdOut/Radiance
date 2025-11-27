@@ -5,7 +5,7 @@
 
 class RaySphere : public Hittable {
     public:
-        RaySphere(const glm::vec3& center, float radius) : _center(center), _radius(std::fmax(0.0f, radius)) {}
+        RaySphere(const glm::vec3& center, float radius, std::shared_ptr<RayMaterial> material) : _center(center), _radius(std::fmax(0.0f, radius)), _material(material) {}
 
         bool hit(const Ray& ray, Interval t, HitRecord& rec) const override {
             glm::vec3 oc = _center - ray.origin();
@@ -31,12 +31,14 @@ class RaySphere : public Hittable {
             rec.normal = (rec.point - _center) / _radius;
             glm::vec3 outwardNormal = (rec.point - _center) / _radius;
             rec.setFaceNormal(ray, outwardNormal);
+            rec.material = _material;
 
             return true;
         }
     private:
         glm::vec3 _center;
         float _radius;
+        std::shared_ptr<RayMaterial> _material;
 };
 
 #endif
