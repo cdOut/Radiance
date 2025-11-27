@@ -10,6 +10,8 @@ class RayMaterial {
         virtual bool scatter(const Ray& inRay, const HitRecord& rec, Color& attenuation, Ray& scatteredRay) const {
             return false;
         }
+
+        virtual Color albedo() const { return Color(1.0f); }
 };
 
 class Lambertian : public RayMaterial {
@@ -26,6 +28,8 @@ class Lambertian : public RayMaterial {
             attenuation = _albedo;
             return true;
         }
+
+        Color albedo() const override { return _albedo; }
     private:
         Color _albedo;
 };
@@ -41,6 +45,8 @@ class Metal : public RayMaterial {
             attenuation = _albedo;
             return true;
         }
+
+        Color albedo() const override { return _albedo; }
     private:
         Color _albedo;
 };

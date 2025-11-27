@@ -3,10 +3,12 @@
 
 #include "Hittable.h"
 #include "RayMaterial.h"
+#include "RayLight.h"
+#include "RayLightList.h"
 
 class RayCamera {
     public:
-        std::vector<unsigned char> render(const Hittable& world) {
+        std::vector<unsigned char> render(const Hittable& world, const RayLightList& lights) {
             initialize();
 
             for (int j = 0; j < _imageHeight; j++) {
@@ -15,7 +17,7 @@ class RayCamera {
                     Color pixelColor(0.0f, 0.0f, 0.0f);
                     for (int sample = 0; sample < _samplesPerPixel; sample++) {
                         Ray ray = getRay(i, j);
-                        pixelColor += rayColor(ray, _maxDepth, world);
+                        pixelColor += rayColor(ray, _maxDepth, world, lights);
                     }
                     pixelColor *= _pixelSamplesScale;
 
@@ -94,23 +96,36 @@ class RayCamera {
             return glm::vec3(r1 - 0.5f, r2 - 0.5f, 0);
         }
 
-        Color rayColor(const Ray& ray, int depth, const Hittable& world) const {
+        Color rayColor(const Ray& ray, int depth, const Hittable& world, const RayLightList& lights) const {
             if (depth <= 0)
                 return Color(0.0f, 0.0f, 0.0f);
 
             HitRecord rec;
             if (world.hit(ray, Interval(0.001, infinity), rec)) {
+                Color resultColor(0.0f);
+
+                for (const auto& lightPtr : lights.lights) {
+                    const RayLight& light = *lightPtr;
+                    glm::vec3 lightDir = glm::normalize(light.directionFrom(rec.point));
+
+                    Ray shadowRay(rec.point + rec.normal * 0.001f, lightDir);
+                    HitRecord shadowRec;
+                    if (!world.hit(shadowRay, Interval(0.001, infinity), shadowRec)) {
+                        float nDotL = glm::max(glm::dot(rec.normal, lightDir), 0.0f);
+                        resultColor += rec.material->albedo() * light.intensityAt(rec.point) * nDotL;
+                    }
+                }
+
                 Ray scattered;
                 Color attenuation;
                 if (rec.material->scatter(ray, rec, attenuation, scattered)) {
-                    return attenuation * rayColor(scattered, depth - 1, world);
+                    resultColor += attenuation * rayColor(scattered, depth - 1, world, lights);
                 }
-                return Color(0.0f);
+
+                return resultColor;
             }
 
-            glm::vec3 unitDirection = glm::normalize(ray.direction());
-            float a = 0.5 * unitDirection.y + 1.0;
-            return (1.0f - a) * Color(1.0, 1.0, 1.0) + a * Color(0.5, 0.7, 1.0);
+            return Color(0.0f, 0.0f, 0.0f);
         }
 };
 

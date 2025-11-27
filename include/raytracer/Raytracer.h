@@ -8,6 +8,7 @@
 #include "HittableList.h"
 #include "RaySphere.h"
 #include "RayMaterial.h"
+#include "RayLightList.h"
 
 class Raytracer {
     public:
@@ -23,11 +24,11 @@ class Raytracer {
             _world.add(std::make_shared<RaySphere>(glm::vec3(1.0f, 0, -1.0f), 0.5f, materialRight));
 
             _camera.aspectRatio() = 16.0 / 9.0;
-            _camera.imageWidth() = 480;
+            _camera.imageWidth() = 400;
             _camera.samplesPerPixel() = 100;
             _camera.maxDepth() = 50;
 
-            return _camera.render(_world);
+            return _camera.render(_world, _lights);
         }
 
         static unsigned int uploadRender(const unsigned char* data) {
@@ -49,6 +50,7 @@ class Raytracer {
         }
     private:
         inline static HittableList _world;
+        inline static RayLightList _lights;
         inline static RayCamera _camera;
 };
 

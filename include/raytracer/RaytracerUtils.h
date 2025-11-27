@@ -12,11 +12,9 @@
 #include "Ray.h"
 #include "Interval.h"
 
-const float pi = 3.1415926535897932385;
-
 inline float randomFloat() {
     static std::uniform_real_distribution<float> distribution(0.0, 1.0);
-    static std::mt19937 generator;
+    static thread_local std::mt19937 generator(std::random_device{}());
     return distribution(generator);
 }
 
