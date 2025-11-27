@@ -42,11 +42,13 @@ class RayCamera {
         int& imageHeight() { return _imageHeight; }
         int& samplesPerPixel() { return _samplesPerPixel; }
         int& maxDepth() { return _maxDepth; }
+        Color& skyboxColor() { return _skyboxColor; }
     private:
         float _aspectRatio = 1.0;
         int _imageWidth = 100;
         int _samplesPerPixel = 10;
         int _maxDepth = 10;
+        Color _skyboxColor = Color(0.0f);
 
         int _imageHeight;
         float _pixelSamplesScale;
@@ -125,7 +127,7 @@ class RayCamera {
                 return resultColor;
             }
 
-            return Color(0.0f, 0.0f, 0.0f);
+            return _skyboxColor;
         }
 };
 

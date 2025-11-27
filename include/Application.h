@@ -577,7 +577,7 @@ class Application {
                     _raytraceFinished = false;
 
                     _raytraceThread = std::thread([this]() {
-                        _renderData = Raytracer::raytrace();
+                        _renderData = Raytracer::raytrace(_scene->getEntities(), _scene->getSkyboxColor());
                         _raytraceInProgress = false;
                         _raytraceFinished = true;
                     });
