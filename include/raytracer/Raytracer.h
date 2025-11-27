@@ -14,7 +14,7 @@
 
 class Raytracer {
     public:
-        static std::vector<unsigned char> raytrace(const std::unordered_map<int, std::unique_ptr<Entity>>& entities, Color skyboxColor) {
+        static std::vector<unsigned char> raytrace(const std::unordered_map<int, std::unique_ptr<Entity>>& entities, Color skyboxColor, int imageWidth, int samplesPerPixel, int maxDepth) {
             _world.clear();
             _lights.clear();
 
@@ -29,6 +29,10 @@ class Raytracer {
             _world.add(std::make_shared<RaySphere>(glm::vec3(1.0f, 0, -1.0f), 0.5f, materialRight));
 
             for (const auto& [_, e] : entities) {
+                if (Camera* camera = dynamic_cast<Camera*>(e.get())) {
+                    _camera.transform() = camera->getTransform();
+                }
+
                 if (Light* light = dynamic_cast<Light*>(e.get())) {
                     Color color = light->getColor();
                     float intensity = light->getIntensity();
@@ -44,9 +48,9 @@ class Raytracer {
             }
 
             _camera.aspectRatio() = 16.0 / 9.0;
-            _camera.imageWidth() = 100;
-            _camera.samplesPerPixel() = 100;
-            _camera.maxDepth() = 50;
+            _camera.imageWidth() = imageWidth;
+            _camera.samplesPerPixel() = samplesPerPixel;
+            _camera.maxDepth() = maxDepth;
             _camera.skyboxColor() = skyboxColor;
 
             return _camera.render(_world, _lights);

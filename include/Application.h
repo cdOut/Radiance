@@ -177,6 +177,11 @@ class Application {
         std::unique_ptr<Scene> _scene;
 
         bool _openSkyboxColorPopup = false;
+        bool _openRenderPopup = false;
+
+        int _renderWidth = 120;
+        int _samplesPerPixel = 100;
+        int _maxDepth = 50;
 
         void initializeFramebuffer() {
             glGenFramebuffers(1, &_FBO);
@@ -572,16 +577,22 @@ class Application {
                     }
                     ImGui::EndMenu();
                 }
-                if (ImGui::MenuItem("Render") && !_raytraceInProgress) {
-                    _raytraceInProgress = true;
-                    _raytraceFinished = false;
+                if (ImGui::BeginMenu("Render")) {
+                    if (ImGui::MenuItem("Render scene") && !_raytraceInProgress) {
+                        _raytraceInProgress = true;
+                        _raytraceFinished = false;
 
-                    _raytraceThread = std::thread([this]() {
-                        _renderData = Raytracer::raytrace(_scene->getEntities(), _scene->getSkyboxColor());
-                        _raytraceInProgress = false;
-                        _raytraceFinished = true;
-                    });
-                    _raytraceThread.detach();
+                        _raytraceThread = std::thread([this]() {
+                            _renderData = Raytracer::raytrace(_scene->getEntities(), _scene->getSkyboxColor(), _renderWidth, _samplesPerPixel, _maxDepth);
+                            _raytraceInProgress = false;
+                            _raytraceFinished = true;
+                        });
+                        _raytraceThread.detach();
+                    }
+                    if (ImGui::MenuItem("Change render settings")) {
+                        _openRenderPopup = true;
+                    }
+                    ImGui::EndMenu();
                 }
                 ImGui::EndMainMenuBar();
             }
@@ -626,6 +637,27 @@ class Application {
                 ImGui::Separator();
                 if (ImGui::Button("Close", ImVec2(-1, 0))) {
                     _openSkyboxColorPopup = false;
+                    ImGui::CloseCurrentPopup();
+                }
+
+                ImGui::EndPopup();
+            }
+
+            if (_openRenderPopup) {
+                ImGui::OpenPopup("Render popup");
+            }
+
+            if (ImGui::BeginPopup("Render popup")) {
+                ImGui::Text("Render Settings");
+                ImGui::Separator();
+                
+                ImGui::InputInt("Image width", &_renderWidth);
+                ImGui::InputInt("Samples per pixel", &_samplesPerPixel);
+                ImGui::InputInt("Max depth", &_maxDepth);
+
+                ImGui::Separator();
+                if (ImGui::Button("Close", ImVec2(-1, 0))) {
+                    _openRenderPopup = false;
                     ImGui::CloseCurrentPopup();
                 }
 

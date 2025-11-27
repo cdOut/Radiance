@@ -43,6 +43,7 @@ class RayCamera {
         int& samplesPerPixel() { return _samplesPerPixel; }
         int& maxDepth() { return _maxDepth; }
         Color& skyboxColor() { return _skyboxColor; }
+        Transform& transform() { return _transform; }
     private:
         float _aspectRatio = 1.0;
         int _imageWidth = 100;
@@ -50,6 +51,7 @@ class RayCamera {
         int _maxDepth = 10;
         Color _skyboxColor = Color(0.0f);
 
+        double fov = 90.0f;
         int _imageHeight;
         float _pixelSamplesScale;
         glm::vec3 _center;
@@ -57,6 +59,22 @@ class RayCamera {
         glm::vec3 _pixelDeltaU;
         glm::vec3 _pixelDeltaV;
         std::vector<unsigned char> _imageData;
+
+        Transform _transform;
+        glm::vec3 _forward {0.0f, 0.0f, -1.0f};
+        glm::vec3 _right {1.0f, 0.0f, 0.0f};
+        glm::vec3 _up {0.0f, 1.0f, 0.0f};
+
+        void calculateVectors() {
+            glm::vec3 direction;
+            direction.x = cosf(glm::radians(_transform.rotation.y)) * cosf(glm::radians(_transform.rotation.x));
+            direction.y = sinf(glm::radians(_transform.rotation.x));
+            direction.z = sinf(glm::radians(_transform.rotation.y)) * cosf(glm::radians(_transform.rotation.x));
+
+            _forward = glm::normalize(direction);
+            _right = glm::normalize(glm::cross(_forward, glm::vec3(0.0f, 1.0f, 0.0f)));
+            _up = glm::normalize(glm::cross(_right, _forward));
+        }
 
         void initialize() {
             _imageHeight = int(_imageWidth / _aspectRatio);
@@ -66,19 +84,22 @@ class RayCamera {
 
             _pixelSamplesScale = 1.0f / float(_samplesPerPixel);
 
-            _center = glm::vec3(0, 0, 0);
+            _center = _transform.position;
+            calculateVectors();
 
             float focalLength = 1.0;
-            float viewportHeight = 2.0;
+            float theta = glm::radians(fov);
+            float h = glm::tan(theta / 2.0f);
+            float viewportHeight = 2.0 * h * focalLength;
             float viewportWidth = viewportHeight * (float(_imageWidth) / _imageHeight);
 
-            glm::vec3 viewportU(viewportWidth, 0, 0);
-            glm::vec3 viewportV(0, -viewportHeight, 0);
+            glm::vec3 viewportU = _right * viewportWidth;
+            glm::vec3 viewportV = -_up * viewportHeight;
 
             _pixelDeltaU = viewportU / float(_imageWidth);
             _pixelDeltaV = viewportV / float(_imageHeight);
 
-            glm::vec3 viewportUpperLeft = _center - glm::vec3(0, 0, focalLength) - viewportU / 2.0f - viewportV / 2.0f;
+            glm::vec3 viewportUpperLeft = _center + _forward * focalLength - viewportU / 2.0f - viewportV / 2.0f;
             _pixel00Loc = viewportUpperLeft + 0.5f * (_pixelDeltaU + _pixelDeltaV);
         }
 
