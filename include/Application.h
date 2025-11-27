@@ -108,7 +108,8 @@ class Application {
 
                 glViewport(0, 0, (int)_viewportSize.x, (int)_viewportSize.y);
                 glm::vec3 color = _scene->getSkyboxColor();
-                glClearColor(color.r, color.g, color.b, 1.0f);
+                glm::vec3 gammaColor = glm::pow(color, glm::vec3(1.0f / 2.2f));
+                glClearColor(gammaColor.r, gammaColor.g, gammaColor.b, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
                 _scene->renderShadowPass((int)_viewportSize.x, (int)_viewportSize.y);

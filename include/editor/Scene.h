@@ -310,7 +310,7 @@ class Scene {
         std::thread _shadowAtlasesSavingThread;
         std::atomic<bool> _shadowAtlasesSavingInProgress = false;
 
-        glm::vec3 _skyboxColor = glm::vec3(0.1f, 0.1f, 0.1f);
+        glm::vec3 _skyboxColor = glm::vec3(0.01f);
 
         unsigned int loadTexture(std::string path) {
             unsigned int texture;
