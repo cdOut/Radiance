@@ -2,7 +2,7 @@
 #define RAYSHAPES_H
 
 #include "Hittable.h"
-#include "../editor/entity/util/Transform.h"
+#include "../../editor/entity/util/Transform.h"
 
 class RaySphere : public Hittable {
     public:

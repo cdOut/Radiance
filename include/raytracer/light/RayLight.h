@@ -1,8 +1,8 @@
 #ifndef RAYLIGHT_H
 #define RAYLIGHT_H
 
-#include "RaytracerUtils.h"
-#include "../editor/entity/util/Transform.h"
+#include "../util/RaytracerUtils.h"
+#include "../../editor/entity/util/Transform.h"
 
 class RayLight {
     public:

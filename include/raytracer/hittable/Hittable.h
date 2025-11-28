@@ -1,7 +1,7 @@
 #ifndef HITTABLE_H
 #define HITTABLE_H
 
-#include "RaytracerUtils.h"
+#include "../util/RaytracerUtils.h"
 
 class RayMaterial;
 

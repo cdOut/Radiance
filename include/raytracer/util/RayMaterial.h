@@ -1,7 +1,7 @@
 #ifndef RAYMATERIAL_H
 #define RAYMATERIAL_H
 
-#include "Hittable.h"
+#include "../hittable/Hittable.h"
 
 class RayMaterial {
     public:
@@ -14,30 +14,9 @@ class RayMaterial {
         virtual Color albedo() const { return Color(1.0f); }
 };
 
-class Lambertian : public RayMaterial {
+class PBR : public RayMaterial {
     public:
-        Lambertian(const Color& albedo) : _albedo(albedo) {}
-
-        bool scatter(const Ray& inRay, const HitRecord& rec, Color& attenuation, Ray& scatteredRay) const override {
-            auto scatterDirection = rec.normal + randomUnitVector();
-
-            if (isVectorNearZero(scatterDirection))
-                scatterDirection = rec.normal;
-
-            scatteredRay = Ray(rec.point, scatterDirection);
-            attenuation = _albedo;
-            return true;
-        }
-
-        Color albedo() const override { return _albedo; }
-    private:
-        Color _albedo;
-};
-
-class Metal : public RayMaterial {
-    public:
-        Metal(const Color& albedo) : _albedo(albedo) {}
-
+        PBR(const Color& albedo, const float metallic, const float roughness) : _albedo(albedo), _metallic(metallic), _roughness(roughness) {}
 
         bool scatter(const Ray& inRay, const HitRecord& rec, Color& attenuation, Ray& scatteredRay) const override {
             glm::vec3 reflected = reflect(inRay.direction(), rec.normal);
@@ -49,6 +28,8 @@ class Metal : public RayMaterial {
         Color albedo() const override { return _albedo; }
     private:
         Color _albedo;
+        float _metallic;
+        float _roughness;
 };
 
 #endif

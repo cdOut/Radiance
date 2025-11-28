@@ -2,7 +2,7 @@
 #define HITTABLELIST_H
 
 #include "Hittable.h"
-#include "RaytracerUtils.h"
+#include "../util/RaytracerUtils.h"
 #include <vector>
 
 class HittableList : public Hittable {

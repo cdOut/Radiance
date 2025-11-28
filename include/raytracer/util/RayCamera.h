@@ -1,10 +1,10 @@
 #ifndef RAYCAMERA_H
 #define RAYCAMERA_H
 
-#include "Hittable.h"
+#include "../hittable/Hittable.h"
 #include "RayMaterial.h"
-#include "RayLight.h"
-#include "RayLightList.h"
+#include "../light/RayLight.h"
+#include "../light/RayLightList.h"
 
 class RayCamera {
     public:

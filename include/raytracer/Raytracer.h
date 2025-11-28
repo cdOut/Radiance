@@ -3,12 +3,12 @@
 
 #include <stb_image_write.h>
 
-#include "RaytracerUtils.h"
-#include "RayCamera.h"
-#include "HittableList.h"
-#include "RayShapes.h"
-#include "RayMaterial.h"
-#include "RayLightList.h"
+#include "util/RaytracerUtils.h"
+#include "util/RayCamera.h"
+#include "hittable/HittableList.h"
+#include "hittable/RayShapes.h"
+#include "util/RayMaterial.h"
+#include "light/RayLightList.h"
 
 #include "../editor/entity/Entity.h"
 
@@ -17,8 +17,6 @@ class Raytracer {
         static std::vector<unsigned char> raytrace(const std::unordered_map<int, std::unique_ptr<Entity>>& entities, Color skyboxColor, int imageWidth, int samplesPerPixel, int maxDepth) {
             _world.clear();
             _lights.clear();
-
-            auto materialCenter = std::make_shared<Lambertian>(Color(0.1, 0.2, 0.5));
 
             for (const auto& [_, e] : entities) {
                 Transform& transform = e->getTransform();
@@ -40,22 +38,30 @@ class Raytracer {
                 }
 
                 std::shared_ptr<Hittable> rayMesh;
+                if (Mesh* mesh = dynamic_cast<Mesh*>(e.get())) {
+                    std::shared_ptr<Hittable> rayMesh;
 
-                if (dynamic_cast<Sphere*>(e.get()))
-                    rayMesh = std::make_shared<RaySphere>(transform, materialCenter);
-                if (dynamic_cast<Plane*>(e.get()))
-                    rayMesh = std::make_shared<RayPlane>(transform, materialCenter);
-                if (dynamic_cast<Cube*>(e.get()))
-                    rayMesh = std::make_shared<RayCube>(transform, materialCenter);
-                if (dynamic_cast<Cylinder*>(e.get()))
-                    rayMesh = std::make_shared<RayCylinder>(transform, materialCenter);
-                if (dynamic_cast<Cone*>(e.get()))
-                    rayMesh = std::make_shared<RayCone>(transform, materialCenter);
-                if (dynamic_cast<Torus*>(e.get()))
-                    rayMesh = std::make_shared<RayTorus>(transform, materialCenter);
-                
-                if (rayMesh)
-                    _world.add(rayMesh);
+                    Color albedo = mesh->getMaterial().albedo;
+                    float metallic = mesh->getMaterial().metallic;
+                    float roughness = mesh->getMaterial().roughness;
+                    std::shared_ptr<RayMaterial> rayMaterial = std::make_shared<PBR>(albedo, metallic, roughness);
+
+                    if (dynamic_cast<Sphere*>(e.get()))
+                        rayMesh = std::make_shared<RaySphere>(transform, rayMaterial);
+                    if (dynamic_cast<Plane*>(e.get()))
+                        rayMesh = std::make_shared<RayPlane>(transform, rayMaterial);
+                    if (dynamic_cast<Cube*>(e.get()))
+                        rayMesh = std::make_shared<RayCube>(transform, rayMaterial);
+                    if (dynamic_cast<Cylinder*>(e.get()))
+                        rayMesh = std::make_shared<RayCylinder>(transform, rayMaterial);
+                    if (dynamic_cast<Cone*>(e.get()))
+                        rayMesh = std::make_shared<RayCone>(transform, rayMaterial);
+                    if (dynamic_cast<Torus*>(e.get()))
+                        rayMesh = std::make_shared<RayTorus>(transform, rayMaterial);
+                    
+                    if (rayMesh)
+                        _world.add(rayMesh);
+                }
             }
 
             _camera.aspectRatio() = 16.0 / 9.0;
