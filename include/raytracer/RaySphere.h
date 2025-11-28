@@ -5,38 +5,40 @@
 
 class RaySphere : public Hittable {
     public:
-        RaySphere(const glm::vec3& center, float radius, std::shared_ptr<RayMaterial> material) : _center(center), _radius(std::fmax(0.0f, radius)), _material(material) {}
+        RaySphere(float radius, std::shared_ptr<RayMaterial> material) : _radius(std::fmax(0.0f, radius)), _material(material) {}
 
         bool hit(const Ray& ray, Interval t, HitRecord& rec) const override {
-            glm::vec3 oc = _center - ray.origin();
-            auto a = glm::dot(ray.direction(), ray.direction());
-            auto h = glm::dot(ray.direction(), oc);
-            auto c = glm::dot(oc, oc) - _radius * _radius;
-            auto discriminant = h * h - a * c;
+            glm::vec3 o = glm::vec3(_modelMatrixI * glm::vec4(ray.origin(), 1.0f));
+            glm::vec3 d = glm::vec3(_modelMatrixI * glm::vec4(ray.direction(), 0.0f));
+
+            auto a = glm::dot(d, d);
+            auto b = glm::dot(d, o);
+            auto c = glm::dot(o, o) - _radius * _radius;
+            auto discriminant = b * b - a * c;
             
             if (discriminant < 0)
                 return false;
 
             auto sqrtd = std::sqrt(discriminant);
 
-            auto root = (h - sqrtd) / a;
+            auto root = (-b - sqrtd) / a;
             if (!t.surrounds(root)) {
-                root = (h + sqrtd) / a;
+                root = (-b + sqrtd) / a;
                 if (!t.surrounds(root))
                     return false;
             }
 
             rec.t = root;
-            rec.point = ray.at(rec.t);
-            rec.normal = (rec.point - _center) / _radius;
-            glm::vec3 outwardNormal = (rec.point - _center) / _radius;
-            rec.setFaceNormal(ray, outwardNormal);
+            glm::vec3 localHitPoint = o + rec.t * d;
+            glm::vec3 localNormal = localHitPoint;
+            rec.point = glm::vec3(_modelMatrix * glm::vec4(localHitPoint, 1.0f));
+            rec.normal = glm::normalize(glm::vec3(_modelMatrixIT * glm::vec4(localNormal, 0.0f)));
+            rec.setFaceNormal(ray, rec.normal);
             rec.material = _material;
 
             return true;
         }
     private:
-        glm::vec3 _center;
         float _radius;
         std::shared_ptr<RayMaterial> _material;
 };

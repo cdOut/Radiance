@@ -23,20 +23,16 @@ class Raytracer {
             auto materialLeft   = std::make_shared<Metal>(Color(0.8, 0.8, 0.8));
             auto materialRight  = std::make_shared<Metal>(Color(0.8, 0.6, 0.2));
 
-            _world.add(std::make_shared<RaySphere>(glm::vec3(0, -100.5, -1), 100.0f, materialGround));
-            _world.add(std::make_shared<RaySphere>(glm::vec3(0, 0, -1.2f), 0.5f, materialCenter));
-            _world.add(std::make_shared<RaySphere>(glm::vec3(-1.0f, 0, -1.0f), 0.5f, materialLeft));
-            _world.add(std::make_shared<RaySphere>(glm::vec3(1.0f, 0, -1.0f), 0.5f, materialRight));
-
             for (const auto& [_, e] : entities) {
-                if (Camera* camera = dynamic_cast<Camera*>(e.get())) {
-                    _camera.transform() = camera->getTransform();
+                Transform& transform = e->getTransform();
+
+                if (dynamic_cast<Camera*>(e.get())) {
+                    _camera.transform() = transform;
                 }
 
                 if (Light* light = dynamic_cast<Light*>(e.get())) {
                     Color color = light->getColor();
                     float intensity = light->getIntensity();
-                    Transform& transform = light->getTransform();
                     
                     if (dynamic_cast<DirectionalLight*>(e.get()))
                         _lights.add(std::make_shared<RayDirectionalLight>(color, intensity, transform));
@@ -44,6 +40,15 @@ class Raytracer {
                         _lights.add(std::make_shared<RayPointLight>(color, intensity, transform));
                     if (SpotLight* spotLight = dynamic_cast<SpotLight*>(e.get()))
                         _lights.add(std::make_shared<RaySpotLight>(color, intensity, transform, spotLight->getSize(), spotLight->getBlend()));
+                }
+
+                if (Mesh* mesh = dynamic_cast<Mesh*>(e.get())) {
+                    std::shared_ptr<Hittable> rayMesh;
+                    if (Sphere* sphere = dynamic_cast<Sphere*>(e.get())) {
+                        rayMesh = std::make_shared<RaySphere>(0.5f, materialCenter);
+                    }
+                    rayMesh->setTransform(transform);
+                    _world.add(rayMesh);
                 }
             }
 
