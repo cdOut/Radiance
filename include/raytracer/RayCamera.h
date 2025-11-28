@@ -124,7 +124,7 @@ class RayCamera {
                 return Color(0.0f, 0.0f, 0.0f);
 
             HitRecord rec;
-            if (world.hit(ray, Interval(0.001, infinity), rec)) {
+            if (world.raymarch(ray, rec)) {
                 Color resultColor(0.0f);
 
                 for (const auto& lightPtr : lights.lights) {
@@ -133,7 +133,7 @@ class RayCamera {
 
                     Ray shadowRay(rec.point + rec.normal * 0.001f, lightDir);
                     HitRecord shadowRec;
-                    if (!world.hit(shadowRay, Interval(0.001, infinity), shadowRec)) {
+                    if (!world.raymarch(shadowRay, shadowRec)) {
                         float nDotL = glm::max(glm::dot(rec.normal, lightDir), 0.0f);
                         resultColor += rec.material->albedo() * light.intensityAt(rec.point) * nDotL;
                     }

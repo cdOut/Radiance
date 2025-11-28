@@ -25,14 +25,47 @@ class Hittable {
     public:
         virtual ~Hittable() = default;
 
-        virtual bool hit(const Ray& ray, Interval t, HitRecord& rec) const = 0;
+        virtual float sdf(const glm::vec3& localPoint) const = 0;
 
-        void setTransform(Transform& transform) {
+        virtual bool raymarch(const Ray& ray, HitRecord& rec) const {
+            const float maxDistance = 100.0f;
+            const float epsilon = 1e-3f;
+            const int maxSteps = 50;
+
+            glm::vec3 o = glm::vec3(_modelMatrixI * glm::vec4(ray.origin(), 1.0f));
+            glm::vec3 d = glm::normalize(glm::vec3(_modelMatrixI * glm::vec4(ray.direction(), 0.0f)));
+
+            float t = 0.0f;
+            for (int i = 0; i < maxSteps; i++) {
+                glm::vec3 p = o + d * t;
+                float distance = sdf(p);
+
+                if (distance < epsilon) {
+                    rec.t = t;
+                    rec.point = glm::vec3(_modelMatrix * glm::vec4(p, 1.0f));
+                    glm::vec3 n = getNormal(p);
+                    rec.normal = glm::normalize(glm::vec3(_modelMatrixIT * glm::vec4(n, 0.0f)));
+                    rec.setFaceNormal(ray, rec.normal);
+                    rec.material = _material;
+                    return true;
+                }
+
+                if (t > maxDistance)
+                    break;
+
+                t += distance;
+            }
+
+            return false;
+        }
+
+        void setTransform(const Transform& transform) {
             _transform = transform;
             calculateMatrices();
         }
     protected:
         Transform _transform;
+        std::shared_ptr<RayMaterial> _material;
 
         glm::mat4 _modelMatrix{1.0f};
         glm::mat4 _modelMatrixI{1.0f};
@@ -51,6 +84,15 @@ class Hittable {
             _modelMatrix = translationMat * rotationMat * scaleMat;
             _modelMatrixI = glm::inverse(_modelMatrix);
             _modelMatrixIT = glm::transpose(_modelMatrixI);
+        }
+
+        glm::vec3 getNormal(const glm::vec3& p) const {
+            const float h = 1e-4f;
+            return glm::normalize(glm::vec3(
+                sdf(p + glm::vec3(h, 0.0f, 0.0f)) - sdf(p - glm::vec3(h, 0.0f, 0.0f)),
+                sdf(p + glm::vec3(0.0f, h, 0.0f)) - sdf(p - glm::vec3(0.0f, h, 0.0f)),
+                sdf(p + glm::vec3(0.0f, 0.0f, h)) - sdf(p - glm::vec3(0.0f, 0.0f, h))
+            ));
         }
 };
 

@@ -18,20 +18,27 @@ class HittableList : public Hittable {
             objects.push_back(object);
         }
 
-        bool hit(const Ray& ray, Interval t, HitRecord& rec) const override {
+        bool raymarch(const Ray& ray, HitRecord& rec) const override {
             HitRecord tempRec;
             bool hitAnything = false;
-            auto closestSoFar = t.max();
+            auto closestSoFar = infinity;
 
             for (const auto& object : objects) {
-                if (object->hit(ray, Interval(t.min(), closestSoFar), tempRec)) {
-                    hitAnything = true;
-                    closestSoFar = tempRec.t;
-                    rec = tempRec;
+                if (object->raymarch(ray, tempRec)) {
+                    float distance = glm::length(tempRec.point - ray.origin());
+                    if (distance < closestSoFar) {
+                        hitAnything = true;
+                        closestSoFar = distance;
+                        rec = tempRec;
+                    }
                 }
             }
 
             return hitAnything;
+        }
+
+        float sdf(const glm::vec3& p) const override {
+            return infinity;
         }
 };
 

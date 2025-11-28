@@ -6,8 +6,7 @@
 #include "RaytracerUtils.h"
 #include "RayCamera.h"
 #include "HittableList.h"
-#include "RaySphere.h"
-#include "RayPlane.h"
+#include "RayShapes.h"
 #include "RayMaterial.h"
 #include "RayLightList.h"
 
@@ -19,10 +18,7 @@ class Raytracer {
             _world.clear();
             _lights.clear();
 
-            auto materialGround = std::make_shared<Lambertian>(Color(0.8, 0.8, 0.0));
             auto materialCenter = std::make_shared<Lambertian>(Color(0.1, 0.2, 0.5));
-            auto materialLeft   = std::make_shared<Metal>(Color(0.8, 0.8, 0.8));
-            auto materialRight  = std::make_shared<Metal>(Color(0.8, 0.6, 0.2));
 
             for (const auto& [_, e] : entities) {
                 Transform& transform = e->getTransform();
@@ -43,15 +39,23 @@ class Raytracer {
                         _lights.add(std::make_shared<RaySpotLight>(color, intensity, transform, spotLight->getSize(), spotLight->getBlend()));
                 }
 
-                if (Mesh* mesh = dynamic_cast<Mesh*>(e.get())) {
-                    std::shared_ptr<Hittable> rayMesh;
-                    if (Sphere* sphere = dynamic_cast<Sphere*>(e.get()))
-                        rayMesh = std::make_shared<RaySphere>(0.5f, materialCenter);
-                    if (Plane* plane = dynamic_cast<Plane*>(e.get()))
-                        rayMesh = std::make_shared<RayPlane>(materialCenter);
-                    rayMesh->setTransform(transform);
+                std::shared_ptr<Hittable> rayMesh;
+
+                if (dynamic_cast<Sphere*>(e.get()))
+                    rayMesh = std::make_shared<RaySphere>(transform, materialCenter);
+                if (dynamic_cast<Plane*>(e.get()))
+                    rayMesh = std::make_shared<RayPlane>(transform, materialCenter);
+                if (dynamic_cast<Cube*>(e.get()))
+                    rayMesh = std::make_shared<RayCube>(transform, materialCenter);
+                if (dynamic_cast<Cylinder*>(e.get()))
+                    rayMesh = std::make_shared<RayCylinder>(transform, materialCenter);
+                if (dynamic_cast<Cone*>(e.get()))
+                    rayMesh = std::make_shared<RayCone>(transform, materialCenter);
+                if (dynamic_cast<Torus*>(e.get()))
+                    rayMesh = std::make_shared<RayTorus>(transform, materialCenter);
+                
+                if (rayMesh)
                     _world.add(rayMesh);
-                }
             }
 
             _camera.aspectRatio() = 16.0 / 9.0;
