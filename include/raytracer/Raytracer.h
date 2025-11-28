@@ -7,6 +7,7 @@
 #include "RayCamera.h"
 #include "HittableList.h"
 #include "RaySphere.h"
+#include "RayPlane.h"
 #include "RayMaterial.h"
 #include "RayLightList.h"
 
@@ -44,9 +45,10 @@ class Raytracer {
 
                 if (Mesh* mesh = dynamic_cast<Mesh*>(e.get())) {
                     std::shared_ptr<Hittable> rayMesh;
-                    if (Sphere* sphere = dynamic_cast<Sphere*>(e.get())) {
+                    if (Sphere* sphere = dynamic_cast<Sphere*>(e.get()))
                         rayMesh = std::make_shared<RaySphere>(0.5f, materialCenter);
-                    }
+                    if (Plane* plane = dynamic_cast<Plane*>(e.get()))
+                        rayMesh = std::make_shared<RayPlane>(materialCenter);
                     rayMesh->setTransform(transform);
                     _world.add(rayMesh);
                 }
