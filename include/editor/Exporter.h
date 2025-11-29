@@ -280,13 +280,7 @@ class Exporter {
         }
     private:
         static float convertIntensity(Light* light) {
-            if (dynamic_cast<DirectionalLight*>(light))
-                return light->getIntensity() * 1000.0f;
-            if (dynamic_cast<PointLight*>(light))
-                return light->getIntensity() * 800.0f;
-            if (dynamic_cast<SpotLight*>(light))
-                return light->getIntensity() * 600.0f;
-            return light->getIntensity() * 10.0f;
+            return light->getIntensity() * 3000.0f;
         }
 
         static void fixWindingOrder(std::vector<unsigned int>& inds, const std::vector<float>& verts) {
