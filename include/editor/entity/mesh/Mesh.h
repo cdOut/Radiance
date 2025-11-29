@@ -72,6 +72,8 @@ class Mesh : public Entity {
         }
 
         Material& getMaterial() { return _material; }
+        std::vector<float> getVertices() { return _vertices; }
+        std::vector<unsigned int> getIndices() { return _indices; }
     protected:
         unsigned int _VAO, _VBO, _EBO;
         unsigned int _floatsPerVert;

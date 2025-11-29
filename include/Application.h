@@ -19,6 +19,7 @@
 #include "raytracer/Raytracer.h"
 #include <thread>
 #include <atomic>
+#include "editor/Exporter.h"
 
 class Application {
     public:
@@ -592,6 +593,9 @@ class Application {
                     }
                     if (ImGui::MenuItem("Change render settings")) {
                         _openRenderPopup = true;
+                    }
+                    if (ImGui::MenuItem("Export scene data to GLTF")) {
+                        Exporter::exportToGLTF(_scene->getEntities(), "./scene.glb");
                     }
                     ImGui::EndMenu();
                 }

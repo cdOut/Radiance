@@ -42,6 +42,19 @@ add_library(stb_image
 )
 target_include_directories(stb_image PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image/include)
 
+# TinyGLTF
+FetchContent_Declare(
+    tinygltf
+    GIT_REPOSITORY https://github.com/syoyo/tinygltf.git
+    GIT_TAG v2.9.7
+)
+FetchContent_MakeAvailable(tinygltf)
+
+add_library(tinygltf_impl
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/tinygltf/src/tinygltf.cpp
+)
+target_include_directories(tinygltf_impl PUBLIC ${tinygltf_SOURCE_DIR})
+
 add_library(imgui
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
@@ -59,8 +72,8 @@ target_link_libraries(imgui PUBLIC glfw glad)
 
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_executable(raycast-thesis ${SRC_FILES})
-target_include_directories(raycast-thesis PRIVATE include)
-target_link_libraries(raycast-thesis PRIVATE imgui glm stb_image)
+target_include_directories(raycast-thesis PRIVATE include ${tinygltf_SOURCE_DIR})
+target_link_libraries(raycast-thesis PRIVATE imgui glm stb_image tinygltf_impl)
 target_compile_options(stb_image PRIVATE -Wno-deprecated-declarations)
 
 file(COPY assets/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets)
