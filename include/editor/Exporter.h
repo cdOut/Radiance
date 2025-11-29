@@ -28,7 +28,7 @@ class Exporter {
                     tinygltf::Node node;
                     node.camera = model.cameras.size() - 1;
 
-                    glm::mat4 M = camera->getModelMatrix();
+                    glm::mat4 M = camera->getModelMatrix();    
                     for (int i = 0; i < 16; i++) 
                         node.matrix.push_back(M[i/4][i%4]);
 
@@ -222,9 +222,24 @@ class Exporter {
                     primitive.attributes["NORMAL"] = normalAccessorIndex;
                     primitive.indices = idxAccessorIndex;
 
+                    tinygltf::Material material;
+                    material.name = "DefaultMaterial";
+
+                    glm::vec3 baseColor = mesh->getMaterial().albedo;
+                    material.pbrMetallicRoughness.baseColorFactor = { baseColor.r, baseColor.g, baseColor.b, 1.0f };
+
+                    material.pbrMetallicRoughness.metallicFactor = mesh->getMaterial().metallic;
+                    material.pbrMetallicRoughness.roughnessFactor = mesh->getMaterial().roughness;
+
+                    material.doubleSided = true;
+
+                    int materialIndex = model.materials.size();
+                    model.materials.push_back(material);
+
+                    primitive.material = materialIndex;
+
                     tinygltf::Mesh gltfMesh;
                     gltfMesh.primitives.push_back(primitive);
-                    gltfMesh.extras = tinygltf::Value{{"doubleSided", true}};
 
                     int meshIndex = model.meshes.size();
                     model.meshes.push_back(gltfMesh);
