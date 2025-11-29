@@ -28,7 +28,17 @@ class Exporter {
                     tinygltf::Node node;
                     node.camera = model.cameras.size() - 1;
 
-                    glm::mat4 M = camera->getModelMatrix();    
+                    glm::vec3 pos = camera->getTransform().position;
+                    glm::vec3 fwd = camera->getForward();
+                    glm::vec3 up  = camera->getUp();
+                    glm::vec3 right = camera->getRight();
+
+                    glm::mat4 M(1.0f);
+                    M[0] = glm::vec4(right, 0.0f);
+                    M[1] = glm::vec4(up, 0.0f);
+                    M[2] = glm::vec4(-fwd, 0.0f);
+                    M[3] = glm::vec4(pos, 1.0f);
+
                     for (int i = 0; i < 16; i++) 
                         node.matrix.push_back(M[i/4][i%4]);
 

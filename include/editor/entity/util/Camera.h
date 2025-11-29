@@ -37,6 +37,10 @@ class Camera : public Entity {
         void setAspect(float aspect) {
             _aspect = aspect;
         }
+
+        glm::vec3 getForward() const { return _forward; }
+        glm::vec3 getRight() const { return _right; }
+        glm::vec3 getUp() const { return _up; }
     private:
         float _fov;
         float _aspect;
