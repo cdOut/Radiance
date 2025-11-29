@@ -280,7 +280,7 @@ class Exporter {
         }
     private:
         static float convertIntensity(Light* light) {
-            return light->getIntensity() * 3000.0f;
+            return light->getIntensity() * 5000.0f;
         }
 
         static void fixWindingOrder(std::vector<unsigned int>& inds, const std::vector<float>& verts) {
