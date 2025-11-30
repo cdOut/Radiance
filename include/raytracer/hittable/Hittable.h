@@ -29,7 +29,7 @@ class Hittable {
 
         virtual bool raymarch(const Ray& ray, HitRecord& rec) const {
             const float maxDistance = 100.0f;
-            const float epsilon = 1e-3f;
+            const float epsilon = 1e-6f;
             const int maxSteps = 50;
 
             glm::vec3 o = glm::vec3(_modelMatrixI * glm::vec4(ray.origin(), 1.0f));
