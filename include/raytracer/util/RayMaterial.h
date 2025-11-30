@@ -3,6 +3,7 @@
 
 #include "../hittable/Hittable.h"
 #include "../light/RayLight.h"
+#include <glm/ext/scalar_constants.hpp>
 
 class RayMaterial {
     public:
@@ -102,7 +103,7 @@ private:
     }
 
     glm::vec3 fresnelSchlick(float cosTheta, glm::vec3 F0) const {
-        return F0 + (1.0f - F0) * pow(1.0f - cosTheta, 5.0f);
+        return F0 + (1.0f - F0) * powf(1.0f - cosTheta, 5.0f);
     }
 };
 
