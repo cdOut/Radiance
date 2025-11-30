@@ -187,6 +187,8 @@ class Application {
         int _samplesPerPixel = 100;
         int _maxDepth = 50;
 
+        unsigned int _saveFBO = 0, _saveColor = 0;
+
         void initializeFramebuffer() {
             glGenFramebuffers(1, &_FBO);
             glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
@@ -216,6 +218,49 @@ class Application {
                 throw std::runtime_error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
             
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        void initializeSaveFramebuffer() {
+            if (_saveFBO == 0) {
+                glGenFramebuffers(1, &_saveFBO);
+                glGenTextures(1, &_saveColor);
+            }
+
+            glBindFramebuffer(GL_FRAMEBUFFER, _saveFBO);
+
+            glBindTexture(GL_TEXTURE_2D, _saveColor);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, _viewportSize.x, _viewportSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _saveColor, 0);
+
+            GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+            glDrawBuffers(1, drawBuffers);
+
+            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                throw std::runtime_error("ERROR::FRAMEBUFFER:: Save framebuffer is not complete!");
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        void saveViewport() {
+            if (_viewportSize.x <= 0 || _viewportSize.y <= 0)
+                return;
+
+            initializeSaveFramebuffer();
+
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, _MSAAFBO);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _saveFBO);
+
+            glBlitFramebuffer(0, 0, (int) _viewportSize.x, (int) _viewportSize.y, 0, 0, (int) _viewportSize.x, (int) _viewportSize.y, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+            std::vector<unsigned char> data(_viewportSize.x * _viewportSize.y * 4);
+            glBindFramebuffer(GL_FRAMEBUFFER, _saveFBO);
+            glReadPixels(0, 0, _viewportSize.x, _viewportSize.y, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+            stbi_flip_vertically_on_write(true);
+            stbi_write_png("viewport.png", _viewportSize.x, _viewportSize.y, 4, data.data(), _viewportSize.x * 4);
         }
 
         void resizeFramebuffer(int width, int height) {
@@ -586,6 +631,9 @@ class Application {
                     }
                     if (ImGui::MenuItem("Save shadow atlases")) {
                         _scene->saveShadowAtlases();
+                    }
+                    if (ImGui::MenuItem("Save current viewport")) {
+                        saveViewport();
                     }
                     if (ImGui::MenuItem("Export scene data to GLTF")) {
                         Exporter::exportToGLTF(_scene->getEntities(), "./scene.glb");
