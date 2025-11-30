@@ -43,17 +43,11 @@ add_library(stb_image
 target_include_directories(stb_image PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image/include)
 
 # TinyGLTF
-FetchContent_Declare(
-    tinygltf
-    GIT_REPOSITORY https://github.com/syoyo/tinygltf.git
-    GIT_TAG v2.9.7
+add_library(tiny_gltf 
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/tiny_gltf/src/tiny_gltf.cpp
 )
-FetchContent_MakeAvailable(tinygltf)
-
-add_library(tinygltf_impl
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/tinygltf/src/tinygltf.cpp
-)
-target_include_directories(tinygltf_impl PUBLIC ${tinygltf_SOURCE_DIR})
+target_include_directories(tiny_gltf PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/tiny_gltf/include)
+target_link_libraries(tiny_gltf PUBLIC stdc++fs)
 
 add_library(imgui
     ${imgui_SOURCE_DIR}/imgui.cpp
@@ -73,7 +67,7 @@ target_link_libraries(imgui PUBLIC glfw glad)
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_executable(raycast-thesis MACOSX_BUNDLE WIN32 ${SRC_FILES})
 target_include_directories(raycast-thesis PRIVATE include ${tinygltf_SOURCE_DIR})
-target_link_libraries(raycast-thesis PRIVATE imgui glm stb_image tinygltf_impl)
+target_link_libraries(raycast-thesis PRIVATE imgui glm stb_image tiny_gltf)
 target_compile_options(stb_image PRIVATE -Wno-deprecated-declarations)
 
 if(APPLE)
