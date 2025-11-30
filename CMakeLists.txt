@@ -47,7 +47,6 @@ add_library(tiny_gltf
     ${CMAKE_CURRENT_SOURCE_DIR}/external/tiny_gltf/src/tiny_gltf.cpp
 )
 target_include_directories(tiny_gltf PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/tiny_gltf/include)
-target_link_libraries(tiny_gltf PUBLIC stdc++fs)
 
 add_library(imgui
     ${imgui_SOURCE_DIR}/imgui.cpp
