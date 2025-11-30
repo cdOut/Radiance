@@ -29,11 +29,13 @@ class Hittable {
 
         virtual bool raymarch(const Ray& ray, HitRecord& rec) const {
             const float maxDistance = 100.0f;
-            const float epsilon = 1e-6f;
+            const float epsilon = 1e-3f;
             const int maxSteps = 50;
 
             glm::vec3 o = glm::vec3(_modelMatrixI * glm::vec4(ray.origin(), 1.0f));
             glm::vec3 d = glm::normalize(glm::vec3(_modelMatrixI * glm::vec4(ray.direction(), 0.0f)));
+
+            if (!intersectsAABB(o, d)) return false;
 
             float t = 0.0f;
             for (int i = 0; i < maxSteps; i++) {
@@ -87,12 +89,27 @@ class Hittable {
         }
 
         glm::vec3 getNormal(const glm::vec3& p) const {
-            const float h = 1e-4f;
+            const float h = 0.0005f;
             return glm::normalize(glm::vec3(
-                sdf(p + glm::vec3(h, 0.0f, 0.0f)) - sdf(p - glm::vec3(h, 0.0f, 0.0f)),
-                sdf(p + glm::vec3(0.0f, h, 0.0f)) - sdf(p - glm::vec3(0.0f, h, 0.0f)),
-                sdf(p + glm::vec3(0.0f, 0.0f, h)) - sdf(p - glm::vec3(0.0f, 0.0f, h))
+                sdf(p + glm::vec3(h, 0, 0)) - sdf(p - glm::vec3(h, 0, 0)),
+                sdf(p + glm::vec3(0, h, 0)) - sdf(p - glm::vec3(0, h, 0)),
+                sdf(p + glm::vec3(0, 0, h)) - sdf(p - glm::vec3(0, 0, h))
             ));
+        }
+
+        bool intersectsAABB(const glm::vec3& o, const glm::vec3& d) const {
+            glm::vec3 min(-1.0f);
+            glm::vec3 max( 1.0f);
+
+            glm::vec3 invDir = 1.0f / d;
+
+            glm::vec3 t0 = (min - o) * invDir;
+            glm::vec3 t1 = (max - o) * invDir;
+
+            float tmin = std::max(std::max(std::min(t0.x, t1.x), std::min(t0.y, t1.y)), std::min(t0.z, t1.z));
+            float tmax = std::min(std::min(std::max(t0.x, t1.x), std::max(t0.y, t1.y)), std::max(t0.z, t1.z));
+
+            return tmax >= tmin && tmax > 0.0f;
         }
 };
 

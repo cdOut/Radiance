@@ -26,8 +26,12 @@ class RayPlane : public Hittable {
         }
 
         float sdf(const glm::vec3& p) const override {
-            glm::vec3 d = glm::abs(p) - glm::vec3(_halfSize, 0.0f, _halfSize);
-            return glm::min(glm::max(d.x, glm::max(d.y, d.z)), 0.0f) + glm::length(glm::max(d, glm::vec3(0.0f)));
+            glm::vec2 size = glm::vec2(_halfSize);
+
+            glm::vec2 d = glm::abs(glm::vec2(p.x, p.z)) - size;
+            float dist2D = glm::max(d.x, d.y);
+
+            return glm::max(dist2D, glm::abs(p.y));
         }
     private:
         float _halfSize = 0.5f;

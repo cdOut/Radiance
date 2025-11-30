@@ -19,6 +19,7 @@
 #include "raytracer/Raytracer.h"
 #include <thread>
 #include <atomic>
+#include <chrono>
 #include "editor/Exporter.h"
 
 class Application {
@@ -175,6 +176,7 @@ class Application {
         std::atomic<bool> _raytraceFinished = false;
         unsigned int _renderId = 0;
         std::vector<unsigned char> _renderData;
+        std::chrono::duration<double> _raytraceDuration{0.0};
 
         std::unique_ptr<Scene> _scene;
 
@@ -508,6 +510,47 @@ class Application {
         }
 
         void renderRaytracer() {
+            ImGuiStyle& style = ImGui::GetStyle();
+            float infoHeight = ImGui::GetFrameHeight() + style.WindowPadding.y * 2;
+            ImGui::BeginChild("Render info", ImVec2(0, infoHeight), true, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+            
+            if (ImGui::BeginTable("table", 2, ImGuiTableFlags_SizingStretchSame)) {
+                ImGui::TableNextColumn();
+                std::string status = _raytraceInProgress ? "RENDERING" : "COMPLETED";
+                if (_renderData.empty() && !_raytraceInProgress)
+                    status = "-";
+                ImGui::Text("Status: %s", status.c_str());
+
+                ImGui::TableNextColumn();
+                if (_raytraceInProgress) {
+                    int scanline = RayCamera::currentScanline.load();
+                    int scansize = RayCamera::scanlineSize.load();
+                    float progress = (float)scanline / scansize;
+                    ImGui::Text("Progress: ");
+                    ImGui::SameLine();
+                    float barHeight = ImGui::GetTextLineHeight();
+                    ImVec4 blue = ImGui::GetStyleColorVec4(ImGuiCol_SliderGrabActive); 
+                    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, blue);
+                    ImGui::ProgressBar(progress, ImVec2(-1, barHeight));
+                    ImGui::PopStyleColor();
+                } else {
+                    ImGui::SetCursorPosX(ImGui::GetContentRegionMax().x - ImGui::CalcTextSize("Time elapsed: 00:00:00").x);
+                    if (_renderId) {
+                        int hours   = static_cast<int>(_raytraceDuration.count()) / 3600;
+                        int minutes = (static_cast<int>(_raytraceDuration.count()) % 3600) / 60;
+                        int seconds = static_cast<int>(_raytraceDuration.count()) % 60;
+                        ImGui::Text("Time elapsed: %02d:%02d:%02d", hours, minutes, seconds);
+                    } else {
+                        ImGui::Text("Time elapsed: --:--:--");
+                    }
+                }
+
+                ImGui::EndTable();
+            }
+
+            ImGui::EndChild();
+
+            ImGui::BeginChild("Render view", ImVec2(0, 0), true, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
             if (_renderId) {
                 ImVec2 avail = ImGui::GetContentRegionAvail();
 
@@ -527,6 +570,7 @@ class Application {
 
                 ImGui::Image((ImTextureID)(intptr_t)_renderId, ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
             }
+            ImGui::EndChild();
         }
 
         void renderUI() {
@@ -535,14 +579,17 @@ class Application {
             ImGui::NewFrame();
 
             if (ImGui::BeginMainMenuBar()) {
-                if (ImGui::BeginMenu("Options")) {
-                    if (ImGui::MenuItem("Save shadow atlases")) {
-                        _scene->saveShadowAtlases();
-                    }
+                if (ImGui::BeginMenu("Settings")) {
+                    ImGui::MenuItem("Show grid", NULL, &_scene->_showGrid);
                     if (ImGui::MenuItem("Change skybox color")) {
                         _openSkyboxColorPopup = true;
                     }
-                    ImGui::MenuItem("Show grid", NULL, &_scene->_showGrid);
+                    if (ImGui::MenuItem("Save shadow atlases")) {
+                        _scene->saveShadowAtlases();
+                    }
+                    if (ImGui::MenuItem("Export scene data to GLTF")) {
+                        Exporter::exportToGLTF(_scene->getEntities(), "./scene.glb");
+                    }
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Create")) {
@@ -580,22 +627,31 @@ class Application {
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Render")) {
-                    if (ImGui::MenuItem("Render scene") && !_raytraceInProgress) {
+                    if (ImGui::MenuItem("Render scene", nullptr, nullptr, !_raytraceInProgress)) {
                         _raytraceInProgress = true;
                         _raytraceFinished = false;
+                        _renderId = 0;
 
                         _raytraceThread = std::thread([this]() {
+                            auto start = std::chrono::high_resolution_clock::now();
+
                             _renderData = Raytracer::raytrace(_scene->getEntities(), _scene->getSkyboxColor(), _renderWidth, _samplesPerPixel, _maxDepth);
+                            
+                            auto end = std::chrono::high_resolution_clock::now();
+                            _raytraceDuration = end - start;
                             _raytraceInProgress = false;
                             _raytraceFinished = true;
                         });
                         _raytraceThread.detach();
                     }
+                    bool hasRender = !_renderData.empty();
+                    if (ImGui::MenuItem("Save current render", nullptr, false, hasRender)) {
+                        int height = _renderWidth * 9 / 16;
+                        stbi_flip_vertically_on_write(true);
+                        stbi_write_png("render.png", _renderWidth, height, 3, _renderData.data(), _renderWidth * 3);
+                    }
                     if (ImGui::MenuItem("Change render settings")) {
                         _openRenderPopup = true;
-                    }
-                    if (ImGui::MenuItem("Export scene data to GLTF")) {
-                        Exporter::exportToGLTF(_scene->getEntities(), "./scene.glb");
                     }
                     ImGui::EndMenu();
                 }

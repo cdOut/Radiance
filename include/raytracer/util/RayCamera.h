@@ -11,8 +11,9 @@ class RayCamera {
         std::vector<unsigned char> render(const Hittable& world, const RayLightList& lights) {
             initialize();
 
+            RayCamera::scanlineSize.store(_imageHeight);
             for (int j = 0; j < _imageHeight; j++) {
-                std::clog << "\rScanlines remaining: " << (_imageHeight - j) << ' ' << std::flush;
+                RayCamera::currentScanline.store(j);
                 for (int i = 0; i < _imageWidth; i++) {
                     Color pixelColor(0.0f, 0.0f, 0.0f);
                     for (int sample = 0; sample < _samplesPerPixel; sample++) {
@@ -32,7 +33,6 @@ class RayCamera {
                     _imageData[index + 2] = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.z));
                 }
             }
-            std::clog << "\rDone.                 \n";
 
             return _imageData;
         }
@@ -44,6 +44,9 @@ class RayCamera {
         int& maxDepth() { return _maxDepth; }
         Color& skyboxColor() { return _skyboxColor; }
         Transform& transform() { return _transform; }
+
+        inline static std::atomic<int> currentScanline = -1;
+        inline static std::atomic<int> scanlineSize = -1;
     private:
         float _aspectRatio = 1.0;
         int _imageWidth = 100;
