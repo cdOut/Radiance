@@ -137,8 +137,7 @@ class RayCamera {
                     Ray shadowRay(rec.point + rec.normal * 0.001f, lightDir);
                     HitRecord shadowRec;
                     if (!world.raymarch(shadowRay, shadowRec)) {
-                        float nDotL = glm::max(glm::dot(rec.normal, lightDir), 0.0f);
-                        resultColor += rec.material->albedo() * light.intensityAt(rec.point) * nDotL;
+                        resultColor += rec.material->shade(ray, rec, lightDir, light);
                     }
                 }
 
