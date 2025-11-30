@@ -71,9 +71,17 @@ target_include_directories(imgui PUBLIC
 target_link_libraries(imgui PUBLIC glfw glad)
 
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
-add_executable(raycast-thesis ${SRC_FILES})
+add_executable(raycast-thesis MACOSX_BUNDLE WIN32 ${SRC_FILES})
 target_include_directories(raycast-thesis PRIVATE include ${tinygltf_SOURCE_DIR})
 target_link_libraries(raycast-thesis PRIVATE imgui glm stb_image tinygltf_impl)
 target_compile_options(stb_image PRIVATE -Wno-deprecated-declarations)
+
+if(APPLE)
+    add_custom_command(TARGET raycast-thesis POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets
+            $<TARGET_FILE_DIR:raycast-thesis>/../Resources/assets
+    )
+endif()
 
 file(COPY assets/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets)

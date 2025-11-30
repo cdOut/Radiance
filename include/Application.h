@@ -70,6 +70,7 @@ class Application {
             IMGUI_CHECKVERSION();
             ImGui::CreateContext();
             ImGuiIO& io = ImGui::GetIO();
+            ImGui::GetIO().IniFilename = nullptr;
             ImGui::StyleColorsDark();
 
             ImGui_ImplGlfw_InitForOpenGL(_window, true);
