@@ -15,6 +15,7 @@ Clone the repository and run the build script:
 git clone https://github.com/cdOut/raytracing-thesis.git
 cd raytracing-thesis
 ./build.sh
+```
 
 ---
 
