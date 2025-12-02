@@ -286,9 +286,9 @@ class Scene {
     private:
         std::unordered_map<int, std::unique_ptr<Entity>> _entities;
         std::vector<Light*> _lights;
-        Entity* _selected;
-        Camera* _camera;
-        Grid* _grid;
+        Entity* _selected = nullptr;
+        Camera* _camera = nullptr;
+        Grid* _grid = nullptr;
 
         unsigned int idVar = 0;
 
