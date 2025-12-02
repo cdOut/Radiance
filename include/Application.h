@@ -609,7 +609,7 @@ class Application {
                     ImGui::PopStyleColor();
                 } else {
                     ImGui::SetCursorPosX(ImGui::GetContentRegionMax().x - ImGui::CalcTextSize("Time elapsed: 00:00:00").x);
-                    if (_renderId) {
+                    if (!_renderData.empty()) {
                         int hours   = static_cast<int>(_raytraceDuration.count()) / 3600;
                         int minutes = (static_cast<int>(_raytraceDuration.count()) % 3600) / 60;
                         int seconds = static_cast<int>(_raytraceDuration.count()) % 60;
