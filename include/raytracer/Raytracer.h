@@ -14,7 +14,7 @@
 
 class Raytracer {
     public:
-        static std::vector<unsigned char> raytrace(const std::unordered_map<int, std::unique_ptr<Entity>>& entities, Color skyboxColor, int imageWidth, int samplesPerPixel, int maxDepth) {
+        static void raytrace(const std::unordered_map<int, std::unique_ptr<Entity>>& entities, Color skyboxColor, int imageWidth, int samplesPerPixel, int maxDepth) {
             _world.clear();
             _lights.clear();
 
@@ -22,7 +22,7 @@ class Raytracer {
                 Transform& transform = e->getTransform();
 
                 if (dynamic_cast<Camera*>(e.get())) {
-                    _camera.transform() = transform;
+                    camera.transform() = transform;
                 }
 
                 if (Light* light = dynamic_cast<Light*>(e.get())) {
@@ -64,36 +64,19 @@ class Raytracer {
                 }
             }
 
-            _camera.aspectRatio() = 16.0 / 9.0;
-            _camera.imageWidth() = imageWidth;
-            _camera.samplesPerPixel() = samplesPerPixel;
-            _camera.maxDepth() = maxDepth;
-            _camera.skyboxColor() = skyboxColor;
+            camera.aspectRatio() = 16.0 / 9.0;
+            camera.imageWidth() = imageWidth;
+            camera.samplesPerPixel() = samplesPerPixel;
+            camera.maxDepth() = maxDepth;
+            camera.skyboxColor() = skyboxColor;
 
-            return _camera.render(_world, _lights);
+            camera.render(_world, _lights);
         }
 
-        static unsigned int uploadRender(const unsigned char* data) {
-            static unsigned int renderId = 0;
-
-            if (!renderId)
-                glGenTextures(1, &renderId);
-
-            glBindTexture(GL_TEXTURE_2D, renderId);
-
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _camera.imageWidth(), _camera.imageHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-            glBindTexture(GL_TEXTURE_2D, 0);
-
-            return renderId;
-        }
+        inline static RayCamera camera;
     private:
         inline static HittableList _world;
         inline static RayLightList _lights;
-        inline static RayCamera _camera;
 };
 
 #endif

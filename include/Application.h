@@ -21,6 +21,7 @@
 #include <atomic>
 #include <chrono>
 #include "editor/Exporter.h"
+#include <mutex>
 
 class Application {
     public:
@@ -81,11 +82,22 @@ class Application {
             glGetIntegerv(GL_MAX_SAMPLES, &_samples);
 
             initializeFramebuffer();
+
+            glGenTextures(1, &_renderId);
+            glBindTexture(GL_TEXTURE_2D, _renderId);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glBindTexture(GL_TEXTURE_2D, 0);
         }
 
         ~Application() {
             glDeleteFramebuffers(1, &_FBO);
             glDeleteRenderbuffers(1, &_RBO);
+
+            _raytraceInProgress = false;
+
+            if (_raytraceThread.joinable())
+                _raytraceThread.join();
 
             ImGui_ImplOpenGL3_Shutdown();
             ImGui_ImplGlfw_Shutdown();
@@ -137,9 +149,22 @@ class Application {
 
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-                if (_raytraceFinished) {
-                    _renderId = Raytracer::uploadRender(_renderData.data());
-                    _raytraceFinished = false;
+                if (_scanlineUpdated) {
+                    std::lock_guard<std::mutex> lock(_previewMutex);
+                    int j = _scanlineToUpload;
+
+                    int height = _renderWidth * 9 / 16;
+
+                    glBindTexture(GL_TEXTURE_2D, _renderId);
+
+                    if (j == 0)
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _renderWidth, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+
+                    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, j, _renderWidth, 1, GL_RGB, GL_UNSIGNED_BYTE, &_renderData[j * _renderWidth * 3]);
+
+                    glBindTexture(GL_TEXTURE_2D, 0);
+
+                    _scanlineUpdated = false;
                 }
 
                 renderUI();
@@ -177,6 +202,9 @@ class Application {
         std::atomic<bool> _raytraceFinished = false;
         unsigned int _renderId = 0;
         std::vector<unsigned char> _renderData;
+        std::atomic<bool> _scanlineUpdated = false;
+        int _scanlineToUpload = -1;
+        std::mutex _previewMutex;
         std::chrono::duration<double> _raytraceDuration{0.0};
 
         std::unique_ptr<Scene> _scene;
@@ -571,7 +599,7 @@ class Application {
                 if (_raytraceInProgress) {
                     int scanline = RayCamera::currentScanline.load();
                     int scansize = RayCamera::scanlineSize.load();
-                    float progress = (float)scanline / scansize;
+                    float progress = 1.0f - (float)scanline / (float)(scansize - 1);
                     ImGui::Text("Progress: ");
                     ImGui::SameLine();
                     float barHeight = ImGui::GetTextLineHeight();
@@ -679,18 +707,38 @@ class Application {
                     if (ImGui::MenuItem("Render scene", nullptr, nullptr, !_raytraceInProgress)) {
                         _raytraceInProgress = true;
                         _raytraceFinished = false;
-                        _renderId = 0;
+
+                        int height = _renderWidth * 9 / 16;
+                        _renderData.resize(_renderWidth * height * 3);
+
+                        _scanlineUpdated = false;
+                        _scanlineToUpload = -1;
+
+                        std::fill(_renderData.begin(), _renderData.end(), 0);
+
+                        glBindTexture(GL_TEXTURE_2D, _renderId);
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _renderWidth, height, 0, GL_RGB, GL_UNSIGNED_BYTE, _renderData.data());
+                        glBindTexture(GL_TEXTURE_2D, 0);
+
+                        Raytracer::camera.imageDataBuffer = _renderData.data();
+                        Raytracer::camera.onScanlineFinished = [this](int j) {
+                            std::lock_guard<std::mutex> lock(_previewMutex);
+                            _scanlineToUpload = j;
+                            _scanlineUpdated = true;
+                        };
 
                         _raytraceThread = std::thread([this]() {
                             auto start = std::chrono::high_resolution_clock::now();
 
-                            _renderData = Raytracer::raytrace(_scene->getEntities(), _scene->getSkyboxColor(), _renderWidth, _samplesPerPixel, _maxDepth);
+                            Raytracer::raytrace(_scene->getEntities(), _scene->getSkyboxColor(), _renderWidth, _samplesPerPixel, _maxDepth);
                             
                             auto end = std::chrono::high_resolution_clock::now();
                             _raytraceDuration = end - start;
+
                             _raytraceInProgress = false;
                             _raytraceFinished = true;
                         });
+
                         _raytraceThread.detach();
                     }
                     bool hasRender = !_renderData.empty();

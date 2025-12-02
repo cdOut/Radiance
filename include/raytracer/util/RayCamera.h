@@ -8,11 +8,14 @@
 
 class RayCamera {
     public:
-        std::vector<unsigned char> render(const Hittable& world, const RayLightList& lights) {
+        std::function<void(int j)> onScanlineFinished;
+        unsigned char* imageDataBuffer;
+
+        void render(const Hittable& world, const RayLightList& lights) {
             initialize();
 
             RayCamera::scanlineSize.store(_imageHeight);
-            for (int j = 0; j < _imageHeight; j++) {
+            for (int j = _imageHeight - 1; j >= 0; j--) {
                 RayCamera::currentScanline.store(j);
                 for (int i = 0; i < _imageWidth; i++) {
                     Color pixelColor(0.0f, 0.0f, 0.0f);
@@ -28,13 +31,13 @@ class RayCamera {
 
                     int index = (j * _imageWidth + i) * 3;
                     static const Interval intensity(0.0f, 0.999f);
-                    _imageData[index] = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.x));
-                    _imageData[index + 1] = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.y));
-                    _imageData[index + 2] = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.z));
+                    imageDataBuffer[index] = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.x));
+                    imageDataBuffer[index + 1] = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.y));
+                    imageDataBuffer[index + 2] = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.z));
                 }
-            }
 
-            return _imageData;
+                if (onScanlineFinished) onScanlineFinished(j);
+            }
         }
 
         float& aspectRatio() { return _aspectRatio; }
