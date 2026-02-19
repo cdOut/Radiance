@@ -69,10 +69,23 @@ target_include_directories(imgui PUBLIC
 )
 target_link_libraries(imgui PUBLIC glfw glad)
 
+FetchContent_Declare(
+    imguizmo
+    GIT_REPOSITORY https://github.com/CedricGuillemet/ImGuizmo.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(imguizmo)
+
+add_library(imguizmo
+    ${imguizmo_SOURCE_DIR}/ImGuizmo.cpp
+)
+target_include_directories(imguizmo PUBLIC ${imguizmo_SOURCE_DIR})
+target_link_libraries(imguizmo PUBLIC imgui)
+
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_executable(raycast-thesis MACOSX_BUNDLE WIN32 ${SRC_FILES})
 target_include_directories(raycast-thesis PRIVATE include ${tinygltf_SOURCE_DIR})
-target_link_libraries(raycast-thesis PRIVATE imgui glm stb_image tiny_gltf tinyfiledialogs)
+target_link_libraries(raycast-thesis PRIVATE imgui glm stb_image tiny_gltf tinyfiledialogs imguizmo)
 target_compile_options(stb_image PRIVATE -Wno-deprecated-declarations)
 
 if(APPLE)

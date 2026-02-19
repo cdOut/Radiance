@@ -24,6 +24,7 @@
 #include "editor/Exporter.h"
 #include "editor/Importer.h"
 #include <mutex>
+#include "ImGuizmo.h"
 
 class Application {
     public:
@@ -90,6 +91,11 @@ class Application {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glBindTexture(GL_TEXTURE_2D, 0);
+
+            _iconGrid = loadIcon("assets/textures/grid.png");
+            _iconTranslate = loadIcon("assets/textures/translate.png");
+            _iconRotate = loadIcon("assets/textures/rotate.png");
+            _iconScale = loadIcon("assets/textures/scale.png");
         }
 
         ~Application() {
@@ -219,6 +225,9 @@ class Application {
         int _maxDepth = 50;
 
         unsigned int _saveFBO = 0, _saveColor = 0;
+
+        ImGuizmo::OPERATION _gizmoOperation = ImGuizmo::TRANSLATE;
+        ImGuizmo::MODE _gizmoMode = ImGuizmo::WORLD;
 
         void initializeFramebuffer() {
             glGenFramebuffers(1, &_FBO);
@@ -442,7 +451,7 @@ class Application {
             float panelHeight = _height - menuBarHeight;
             float topHeight = panelHeight * 0.4f;
 
-            ImGui::BeginChild("Viewport", ImVec2(leftWidth, 0), true, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+            ImGui::BeginChild("Viewport", ImVec2(leftWidth, 0), true, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
 
             _viewportSize = ImGui::GetContentRegionAvail();
             if (_viewportSize.x != _lastViewportSize.x || _viewportSize.y != _lastViewportSize.y) {
@@ -460,6 +469,113 @@ class Application {
 
             ImVec2 imageMin = ImGui::GetItemRectMin();
             ImVec2 imageMax = ImGui::GetItemRectMax();
+
+            ImVec2 toolbarSize = ImVec2(4 * 36 + 8, 32);
+
+            ImGui::SetCursorScreenPos(ImVec2(
+                _viewportPos.x + _viewportSize.x - toolbarSize.x - 12,
+                _viewportPos.y + 12
+            ));
+
+            ImGui::BeginChild("GizmoToolbar", toolbarSize, false,
+                ImGuiWindowFlags_NoDecoration |
+                ImGuiWindowFlags_NoNav |
+                ImGuiWindowFlags_NoMove
+            );
+
+            auto iconToggleButton = [&](unsigned int iconId, bool active, const char* tooltip) -> bool {
+                ImVec4 tint = active ? ImVec4(1, 1, 1, 1) : ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
+                if (active) {
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+                } else {
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(16/255.0f, 16/255.0f, 16/255.0f, 192/255.0f));
+                }
+
+                bool clicked = ImGui::ImageButton(tooltip, (ImTextureID)(intptr_t)iconId, ImVec2(24, 24), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint);
+                ImGui::PopStyleColor();
+                ImGui::PopStyleVar();
+
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", tooltip);
+
+                return clicked;
+            };
+
+            if (iconToggleButton(_iconGrid, _scene->_showGrid, "Toggle Grid"))
+                _scene->_showGrid = !_scene->_showGrid;
+            ImGui::SameLine();
+            if (iconToggleButton(_iconTranslate, _gizmoOperation == ImGuizmo::TRANSLATE, "Translate"))
+                _gizmoOperation = ImGuizmo::TRANSLATE;
+            ImGui::SameLine();
+            if (iconToggleButton(_iconRotate, _gizmoOperation == ImGuizmo::ROTATE, "Rotate"))
+                _gizmoOperation = ImGuizmo::ROTATE;
+            ImGui::SameLine();
+            if (iconToggleButton(_iconScale, _gizmoOperation == ImGuizmo::SCALE, "Scale"))
+                _gizmoOperation = ImGuizmo::SCALE;
+
+            ImGui::EndChild();
+
+            Entity* selected = _scene->getSelectedEntity();
+            if (selected && selected != _scene->getCamera() && selected != _scene->getGrid()) {
+                if (_isViewportHovered && !ImGui::IsAnyItemActive()) {
+                    if (ImGui::IsKeyPressed(ImGuiKey_G)) _gizmoOperation = ImGuizmo::TRANSLATE;
+                    if (ImGui::IsKeyPressed(ImGuiKey_R)) _gizmoOperation = ImGuizmo::ROTATE;
+                    if (ImGui::IsKeyPressed(ImGuiKey_S)) _gizmoOperation = ImGuizmo::SCALE;
+                }
+
+                ImGuizmo::SetOrthographic(false);
+                ImGuizmo::SetDrawlist();
+                ImGuizmo::SetRect(_viewportPos.x, _viewportPos.y, _viewportSize.x, _viewportSize.y);
+
+                glm::mat4 view = _scene->getCamera()->getViewMatrix();
+                glm::mat4 proj = _scene->getCamera()->getProjectionMatrix();
+
+                glm::mat4 model = selected->getModelMatrix();
+                glm::mat4 delta(1.0f);
+
+                if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), _gizmoOperation, ImGuizmo::WORLD, glm::value_ptr(model), glm::value_ptr(delta))) {
+                    Transform& t = selected->getTransform();
+
+                    if (_gizmoOperation == ImGuizmo::TRANSLATE) {
+                        glm::vec3 dp, dr, ds;
+                        ImGuizmo::DecomposeMatrixToComponents(
+                            glm::value_ptr(delta),
+                            glm::value_ptr(dp),
+                            glm::value_ptr(dr),
+                            glm::value_ptr(ds)
+                        );
+
+                        t.position += dp;
+                    } else if (_gizmoOperation == ImGuizmo::ROTATE) {
+                        glm::quat dq = glm::quat_cast(delta);
+
+                        float angle = glm::degrees(glm::angle(dq));
+                        glm::vec3 axis = glm::axis(dq);
+
+                        axis = glm::normalize(axis);
+
+                        if (fabs(axis.x) > 0.9f)
+                            t.rotation.x += angle * (axis.x > 0 ? 1.f : -1.f);
+                        else if (fabs(axis.y) > 0.9f)
+                            t.rotation.y += angle * (axis.y > 0 ? 1.f : -1.f);
+                        else if (fabs(axis.z) > 0.9f)
+                            t.rotation.z += angle * (axis.z > 0 ? 1.f : -1.f);
+                    } else if (_gizmoOperation == ImGuizmo::SCALE) {
+                        glm::vec3 dp, dr, ds;
+                        ImGuizmo::DecomposeMatrixToComponents(
+                            glm::value_ptr(delta),
+                            glm::value_ptr(dp),
+                            glm::value_ptr(dr),
+                            glm::value_ptr(ds)
+                        );
+
+                        t.scale *= ds;
+                    }
+                }
+            }
+
             ImDrawList* drawList = ImGui::GetWindowDrawList();
 
             float aspectWidth = _viewportSize.x;
@@ -496,7 +612,7 @@ class Application {
 
                 bool isSelected = (e.get() == _scene->getSelectedEntity());
                 if (ImGui::Selectable(e->getName().c_str(), isSelected)) {
-                    Entity* selected = _scene->getSelectedEntity();
+                    selected = _scene->getSelectedEntity();
                     if (selected)
                         selected->setIsSelected(false);
                     
@@ -512,7 +628,7 @@ class Application {
 
             ImGui::BeginChild("Inspector", ImVec2(0, 0), true, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
-            Entity* selected = _scene->getSelectedEntity();
+            selected = _scene->getSelectedEntity();
             if (selected) {
                 char nameBuffer[64];
                 std::strncpy(nameBuffer, selected->getName().c_str(), sizeof(nameBuffer));
@@ -653,6 +769,7 @@ class Application {
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
+            ImGuizmo::BeginFrame();
 
             if (ImGui::BeginMainMenuBar()) {
                 if (ImGui::BeginMenu("Scene")) {
@@ -762,7 +879,6 @@ class Application {
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Debug")) {
-                    ImGui::MenuItem("Show grid", NULL, &_scene->_showGrid);
                     if (ImGui::MenuItem("Change skybox color")) {
                         _openSkyboxColorPopup = true;
                     }
@@ -846,6 +962,28 @@ class Application {
 
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
+
+        unsigned int _iconGrid = 0, _iconTranslate = 0, _iconRotate = 0, _iconScale = 0;
+
+        static unsigned int loadIcon(const char* path) {
+            unsigned int texture;
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            int w, h, ch;
+            stbi_set_flip_vertically_on_load(false);
+            unsigned char* data = stbi_load(path, &w, &h, &ch, 4);
+
+            if (data) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                stbi_image_free(data);
+            }
+
+            return texture;
         }
 };
 
