@@ -7,6 +7,7 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "tinyfiledialogs.h"
 
 #include <string>
 #include <iostream>
@@ -21,6 +22,7 @@
 #include <atomic>
 #include <chrono>
 #include "editor/Exporter.h"
+#include "editor/Importer.h"
 #include <mutex>
 
 class Application {
@@ -653,23 +655,30 @@ class Application {
             ImGui::NewFrame();
 
             if (ImGui::BeginMainMenuBar()) {
-                if (ImGui::BeginMenu("Settings")) {
-                    ImGui::MenuItem("Show grid", NULL, &_scene->_showGrid);
-                    if (ImGui::MenuItem("Change skybox color")) {
-                        _openSkyboxColorPopup = true;
+                if (ImGui::BeginMenu("Scene")) {
+                    if (ImGui::MenuItem("New scene")) {
+                        _scene->reset();
+                        _scene->getCamera()->setAspect(_viewportSize.x / _viewportSize.y);
                     }
-                    if (ImGui::MenuItem("Save shadow atlases")) {
-                        _scene->saveShadowAtlases();
+
+                    const char* filters[] = { "*.gltf", "*.glb" };
+                    if (ImGui::MenuItem("Load scene")) {
+                        const char* path = tinyfd_openFileDialog("Import scene", "./", 2, filters, NULL, 0);
+                        if (path) {
+                            _scene->reset();
+                            Importer::importFromGLTF(*_scene, path);
+                            _scene->getCamera()->setAspect(_viewportSize.x / _viewportSize.y);
+                        }
                     }
-                    if (ImGui::MenuItem("Save current viewport")) {
-                        saveViewport();
-                    }
-                    if (ImGui::MenuItem("Export scene data to GLTF")) {
-                        Exporter::exportToGLTF(_scene->getEntities(), "./scene.glb");
+                    if (ImGui::MenuItem("Save scene")) {
+                        const char* path = tinyfd_saveFileDialog("Export scene", "./scene.glb", 2, filters, NULL);
+                        if (path) {
+                            Exporter::exportToGLTF(_scene->getEntities(), path);
+                        }
                     }
                     ImGui::EndMenu();
                 }
-                if (ImGui::BeginMenu("Create")) {
+                if (ImGui::BeginMenu("Add")) {
                     if (ImGui::BeginMenu("Mesh")) {
                         for (const auto& primitive : primitiveList) {
                             if (ImGui::MenuItem(primitive.name)) {
@@ -749,6 +758,19 @@ class Application {
                     }
                     if (ImGui::MenuItem("Change render settings")) {
                         _openRenderPopup = true;
+                    }
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Debug")) {
+                    ImGui::MenuItem("Show grid", NULL, &_scene->_showGrid);
+                    if (ImGui::MenuItem("Change skybox color")) {
+                        _openSkyboxColorPopup = true;
+                    }
+                    if (ImGui::MenuItem("Save shadow atlases")) {
+                        _scene->saveShadowAtlases();
+                    }
+                    if (ImGui::MenuItem("Save current viewport")) {
+                        saveViewport();
                     }
                     ImGui::EndMenu();
                 }

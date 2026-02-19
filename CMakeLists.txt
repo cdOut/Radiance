@@ -48,6 +48,12 @@ add_library(tiny_gltf
 )
 target_include_directories(tiny_gltf PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/tiny_gltf/include)
 
+# tinyfiledialogs
+add_library(tinyfiledialogs 
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyfiledialogs/src/tinyfiledialogs.c
+)
+target_include_directories(tinyfiledialogs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyfiledialogs/include)
+
 add_library(imgui
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
@@ -66,10 +72,11 @@ target_link_libraries(imgui PUBLIC glfw glad)
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_executable(raycast-thesis MACOSX_BUNDLE WIN32 ${SRC_FILES})
 target_include_directories(raycast-thesis PRIVATE include ${tinygltf_SOURCE_DIR})
-target_link_libraries(raycast-thesis PRIVATE imgui glm stb_image tiny_gltf)
+target_link_libraries(raycast-thesis PRIVATE imgui glm stb_image tiny_gltf tinyfiledialogs)
 target_compile_options(stb_image PRIVATE -Wno-deprecated-declarations)
 
 if(APPLE)
+    target_link_libraries(raycast-thesis PRIVATE "-framework AppKit")
     add_custom_command(TARGET raycast-thesis POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_CURRENT_SOURCE_DIR}/assets

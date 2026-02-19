@@ -23,6 +23,21 @@ class Scene {
             initialize();
         }
 
+        void reset() {
+            _entities.clear();
+            _lights.clear();
+            _selected = nullptr;
+            _camera = nullptr;
+            _grid = nullptr;
+            idVar = 0;
+            _pointAtlasIndex = 0;
+            _shadowAtlasIndex = 0;
+            _pointShadowAtlas = std::make_unique<PointShadowAtlas>();
+            _shadowAtlas = std::make_unique<ShadowAtlas>();
+            _skyboxColor = glm::vec3(0.01f);
+            populateDefaultEntities();
+        }
+
         void update(float deltaTime, const glm::vec2& moveVector, const glm::vec2& lookDelta, bool isRightButtonDown) {
             if (_camera && isRightButtonDown) {
                 _camera->handleMove(moveVector, deltaTime);
@@ -356,12 +371,16 @@ class Scene {
             _billboardShader->use();
             _billboardShader->setInt("tex", 0);
 
-            _camera = createEntity<Camera>();
-            _grid = createEntity<Grid>();   
-            _grid->setShader(_gridShader.get());
-
             _lightIcon = loadTexture("assets/textures/lightbulbEmpty.png");
             _lightIconSelected = loadTexture("assets/textures/lightbulb.png");
+
+            populateDefaultEntities();
+        }
+
+        void populateDefaultEntities() {
+            _camera = createEntity<Camera>();
+            _grid = createEntity<Grid>();
+            _grid->setShader(_gridShader.get());
         }
 
         void renderShadowDirSpotPass(Light* light) {
