@@ -56,17 +56,26 @@ public:
 
     bool scatter(const Ray& inRay, const HitRecord& rec, Color& attenuation, Ray& scatteredRay) const override {
         glm::vec3 N = rec.normal;
-        glm::vec3 R = reflect(glm::normalize(inRay.direction()), N);
-
-        glm::vec3 dir = glm::normalize(R + _roughness * randomOnHemisphere(N));
-        if (glm::dot(dir, N) <= 0.0f)
-            dir = N;
-
-        scatteredRay = Ray(rec.point + N * 0.001f, dir);
-
+        glm::vec3 V = glm::normalize(-inRay.direction());
+        
         Color F0 = glm::mix(Color(0.04f), _albedo, _metallic);
-        attenuation = F0;
-
+        glm::vec3 F = fresnelSchlick(glm::max(glm::dot(N, V), 0.0f), F0);
+        
+        float specularChance = glm::max(F.r, glm::max(F.g, F.b));
+        
+        glm::vec3 dir;
+        if (randomFloat() < specularChance) {
+            glm::vec3 R = reflect(glm::normalize(inRay.direction()), N);
+            dir = glm::normalize(R + _roughness * _roughness * randomOnHemisphere(N));
+            attenuation = F / specularChance;
+        } else {
+            dir = randomCosineHemisphere(N);
+            glm::vec3 kD = (glm::vec3(1.0f) - F) * (1.0f - _metallic);
+            attenuation = kD * _albedo / (1.0f - specularChance);
+        }
+        
+        if (glm::dot(dir, N) <= 0.0f) dir = N;
+        scatteredRay = Ray(rec.point + N * 0.001f, dir);
         return true;
     }
 private:

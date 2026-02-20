@@ -47,6 +47,24 @@ inline glm::vec3 randomOnHemisphere(const glm::vec3& normal) {
         return -onUnitSphere;
 }
 
+inline glm::vec3 randomCosineHemisphere(const glm::vec3& normal) {
+    float r1 = randomFloat();
+    float r2 = randomFloat();
+    
+    float phi = 2.0f * glm::pi<float>() * r1;
+    float sqrtR2 = std::sqrt(r2);
+    
+    float x = std::cos(phi) * sqrtR2;
+    float y = std::sin(phi) * sqrtR2;
+    float z = std::sqrt(1.0f - r2);
+    
+    glm::vec3 up = std::fabs(normal.z) < 0.999f ? glm::vec3(0, 0, 1) : glm::vec3(1, 0, 0);
+    glm::vec3 tangent = glm::normalize(glm::cross(up, normal));
+    glm::vec3 bitangent = glm::cross(normal, tangent);
+    
+    return glm::normalize(tangent * x + bitangent * y + normal * z);
+}
+
 inline float linearToGamma(float linearComponent) {
     if (linearComponent > 0)
         return std::sqrt(linearComponent);
