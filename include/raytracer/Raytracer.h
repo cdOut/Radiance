@@ -9,8 +9,10 @@
 #include "hittable/RayShapes.h"
 #include "util/RayMaterial.h"
 #include "light/RayLightList.h"
+#include "hittable/RayMesh.h"
 
 #include "../editor/entity/Entity.h"
+#include "../editor/entity/mesh/RawMesh.h"
 
 class Raytracer {
     public:
@@ -58,7 +60,9 @@ class Raytracer {
                         rayMesh = std::make_shared<RayCone>(transform, rayMaterial);
                     if (dynamic_cast<Torus*>(e.get()))
                         rayMesh = std::make_shared<RayTorus>(transform, rayMaterial);
-                    
+                    if (RawMesh* rawMesh = dynamic_cast<RawMesh*>(e.get()))
+                        rayMesh = std::make_shared<RayMesh>(rawMesh->getVertices(), rawMesh->getIndices(), transform, rayMaterial);
+
                     if (rayMesh)
                         _world.add(rayMesh);
                 }

@@ -22,7 +22,7 @@
 #include <atomic>
 #include <chrono>
 #include "editor/Exporter.h"
-#include "editor/Importer.h"
+#include "editor/MeshImporter.h"
 #include <mutex>
 #include "ImGuizmo.h"
 
@@ -798,7 +798,6 @@ class Application {
                         const char* path = tinyfd_openFileDialog("Import scene", "./", 2, filters, NULL, 0);
                         if (path) {
                             _scene->reset();
-                            Importer::importFromGLTF(*_scene, path);
                             _scene->getCamera()->setAspect(_viewportSize.x / _viewportSize.y);
                         }
                     }
@@ -822,6 +821,16 @@ class Application {
                                 _scene.get()->setSelectedEntity(entity);
                                 entity->setIsSelected(true);
                                 entity->setName(_scene->generateUniqueName(primitive.name));
+                            }
+                        }
+
+                        ImGui::Separator();
+
+                        if (ImGui::MenuItem("Import mesh")) {
+                            const char* filters[] = { "*.gltf", "*.glb" };
+                            const char* path = tinyfd_openFileDialog("Import mesh", "./", 2, filters, NULL, 0);
+                            if (path) {
+                                MeshImporter::importFromGLTF(*_scene, path);
                             }
                         }
 
@@ -1003,6 +1012,17 @@ class Application {
                             ImGui::CloseCurrentPopup();
                         }
                     }
+
+                    ImGui::Separator();
+
+                    if (ImGui::MenuItem("Import mesh")) {
+                        const char* filters[] = { "*.gltf", "*.glb" };
+                        const char* path = tinyfd_openFileDialog("Import mesh", "./", 2, filters, NULL, 0);
+                        if (path) {
+                            MeshImporter::importFromGLTF(*_scene, path);
+                        }
+                    }
+
                     ImGui::EndMenu();
                 }
 
