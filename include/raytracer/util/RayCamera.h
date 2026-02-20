@@ -50,6 +50,8 @@ class RayCamera {
                 threads.emplace_back(worker);
             for (auto& t : threads)
                 t.join();
+            
+            denoise();
         }
 
         float& aspectRatio() { return _aspectRatio; }
@@ -135,6 +137,64 @@ class RayCamera {
             float r1 = randomFloat();
             float r2 = randomFloat();
             return glm::vec3(r1 - 0.5f, r2 - 0.5f, 0);
+        }
+
+        void denoise() {
+            for (int pass = 0; pass < 3; pass++) {
+                denoisePass();
+            }
+        }
+
+        void denoisePass() {
+            int height = _imageHeight;
+            std::vector<unsigned char> output(_imageWidth * height * 3);
+
+            const int radius = 2;
+            const float sigmaSpace = 2.0f;
+
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < _imageWidth; x++) {
+                    glm::vec3 centerColor = getPixel(x, y);
+                    float brightness = (centerColor.r + centerColor.g + centerColor.b) / 3.0f;
+                    float sigmaColor = glm::mix(0.05f, 0.25f, 1.0f - brightness);
+                    glm::vec3 sum(0.0f);
+                    float weightSum = 0.0f;
+
+                    for (int dy = -radius; dy <= radius; dy++) {
+                        for (int dx = -radius; dx <= radius; dx++) {
+                            int nx = glm::clamp(x + dx, 0, _imageWidth - 1);
+                            int ny = glm::clamp(y + dy, 0, height - 1);
+
+                            glm::vec3 neighborColor = getPixel(nx, ny);
+
+                            float spaceDist = float(dx * dx + dy * dy) / (2.0f * sigmaSpace * sigmaSpace);
+                            glm::vec3 colorDiff = neighborColor - centerColor;
+                            float colorDist = glm::dot(colorDiff, colorDiff) / (2.0f * sigmaColor * sigmaColor);
+
+                            float weight = expf(-spaceDist - colorDist);
+                            sum += neighborColor * weight;
+                            weightSum += weight;
+                        }
+                    }
+
+                    glm::vec3 result = sum / weightSum;
+                    int index = (y * _imageWidth + x) * 3;
+                    output[index] = static_cast<unsigned char>(glm::clamp(result.r * 255.0f, 0.0f, 255.0f));
+                    output[index + 1] = static_cast<unsigned char>(glm::clamp(result.g * 255.0f, 0.0f, 255.0f));
+                    output[index + 2] = static_cast<unsigned char>(glm::clamp(result.b * 255.0f, 0.0f, 255.0f));
+                }
+            }
+
+            std::copy(output.begin(), output.end(), imageDataBuffer);
+        }
+
+        glm::vec3 getPixel(int x, int y) const {
+            int index = (y * _imageWidth + x) * 3;
+            return glm::vec3(
+                imageDataBuffer[index]     / 255.0f,
+                imageDataBuffer[index + 1] / 255.0f,
+                imageDataBuffer[index + 2] / 255.0f
+            );
         }
 
         Color rayColor(const Ray& ray, int depth, const Hittable& world, const RayLightList& lights) const {

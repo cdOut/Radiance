@@ -520,17 +520,20 @@ class Application {
             ImGui::EndChild();
 
             if (_isViewportHovered && !ImGui::IsAnyItemActive()) {
-                if (ImGui::IsKeyPressed(ImGuiKey_A)) {
-                    _contextMenuPos = ImGui::GetMousePos();
-                    _showAddContextMenu = true;
+                if (!_isRightButtonDown) {
+                    if (ImGui::IsKeyPressed(ImGuiKey_A)) {
+                        _contextMenuPos = ImGui::GetMousePos();
+                        _showAddContextMenu = true;
+                    }
+                    if (ImGui::IsKeyPressed(ImGuiKey_X)) {
+                        _contextMenuPos = ImGui::GetMousePos();
+                        _showDeleteContextMenu = true;
+                    }
+                    
+                    if (ImGui::IsKeyPressed(ImGuiKey_G)) _gizmoOperation = ImGuizmo::TRANSLATE;
+                    if (ImGui::IsKeyPressed(ImGuiKey_R)) _gizmoOperation = ImGuizmo::ROTATE;
+                    if (ImGui::IsKeyPressed(ImGuiKey_S)) _gizmoOperation = ImGuizmo::SCALE;
                 }
-                if (ImGui::IsKeyPressed(ImGuiKey_X)) {
-                    _contextMenuPos = ImGui::GetMousePos();
-                    _showDeleteContextMenu = true;
-                }
-                if (ImGui::IsKeyPressed(ImGuiKey_G)) _gizmoOperation = ImGuizmo::TRANSLATE;
-                if (ImGui::IsKeyPressed(ImGuiKey_R)) _gizmoOperation = ImGuizmo::ROTATE;
-                if (ImGui::IsKeyPressed(ImGuiKey_S)) _gizmoOperation = ImGuizmo::SCALE;
             }
 
             Entity* selected = _scene->getSelectedEntity();
@@ -884,7 +887,7 @@ class Application {
                         if (path) {
                             int height = _renderWidth * 9 / 16;
                             stbi_flip_vertically_on_write(true);
-                            stbi_write_png("render.png", _renderWidth, height, 3, _renderData.data(), _renderWidth * 3);
+                            stbi_write_png(path, _renderWidth, height, 3, _renderData.data(), _renderWidth * 3);
                         }
                     }
                     if (ImGui::MenuItem("Change render settings")) {
