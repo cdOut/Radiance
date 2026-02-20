@@ -25,12 +25,30 @@ class RayCamera {
                 while ((j = nextRow.fetch_sub(1)) >= 0) {
                     RayCamera::currentScanline.store(j);
                     for (int i = 0; i < _imageWidth; i++) {
-                        Color pixelColor(0.0f, 0.0f, 0.0f);
+                        Color mean(0.0f);
+                        Color M2(0.0f);
+                        int samplesTaken = 0;
+                        
                         for (int sample = 0; sample < _samplesPerPixel; sample++) {
                             Ray ray = getRay(i, j);
-                            pixelColor += rayColor(ray, _maxDepth, world, lights);
+                            Color newSample = rayColor(ray, _maxDepth, world, lights);
+                            samplesTaken++;
+
+                            Color delta = newSample - mean;
+                            mean += delta / float(samplesTaken);
+                            Color delta2 = newSample - mean;
+                            M2 += delta * delta2;
+
+                            if (sample >= _minSamplesPerPixel - 1) {
+                                Color variance = M2 / float(samplesTaken - 1);
+                                float avgVariance = (variance.x + variance.y + variance.z) / 3.0f;
+
+                                if (avgVariance < _varianceThreshold)
+                                    break;
+                            }
                         }
-                        pixelColor *= _pixelSamplesScale;
+
+                        Color pixelColor = mean;
 
                         pixelColor.x = linearToGamma(pixelColor.x);
                         pixelColor.y = linearToGamma(pixelColor.y);
@@ -70,6 +88,8 @@ class RayCamera {
         int _samplesPerPixel = 10;
         int _maxDepth = 10;
         Color _skyboxColor = Color(0.0f);
+        int _minSamplesPerPixel = 10;
+        float _varianceThreshold = 0.0005f;
 
         double fov = 90.0f;
         int _imageHeight;
