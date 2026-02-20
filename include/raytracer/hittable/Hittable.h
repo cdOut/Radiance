@@ -31,7 +31,7 @@ class Hittable {
             const float maxDistance = 100.0f;
             float maxScale = glm::max(glm::max(_transform.scale.x, _transform.scale.y), _transform.scale.z);
             const float epsilon = 1e-3f / maxScale;
-            const int maxSteps = 500;
+            const int maxSteps = 100;
 
             glm::vec3 o = glm::vec3(_modelMatrixI * glm::vec4(ray.origin(), 1.0f));
             glm::vec3 d = glm::normalize(glm::vec3(_modelMatrixI * glm::vec4(ray.direction(), 0.0f)));

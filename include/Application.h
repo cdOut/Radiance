@@ -159,17 +159,10 @@ class Application {
 
                 if (_scanlineUpdated) {
                     std::lock_guard<std::mutex> lock(_previewMutex);
-                    int j = _scanlineToUpload;
-
                     int height = _renderWidth * 9 / 16;
 
                     glBindTexture(GL_TEXTURE_2D, _renderId);
-
-                    if (j == 0)
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _renderWidth, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-
-                    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, j, _renderWidth, 1, GL_RGB, GL_UNSIGNED_BYTE, &_renderData[j * _renderWidth * 3]);
-
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _renderWidth, height, 0, GL_RGB, GL_UNSIGNED_BYTE, _renderData.data());
                     glBindTexture(GL_TEXTURE_2D, 0);
 
                     _scanlineUpdated = false;
@@ -867,8 +860,6 @@ class Application {
 
                         Raytracer::camera.imageDataBuffer = _renderData.data();
                         Raytracer::camera.onScanlineFinished = [this](int j) {
-                            std::lock_guard<std::mutex> lock(_previewMutex);
-                            _scanlineToUpload = j;
                             _scanlineUpdated = true;
                         };
 

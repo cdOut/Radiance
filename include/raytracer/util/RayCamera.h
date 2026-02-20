@@ -14,30 +14,42 @@ class RayCamera {
         void render(const Hittable& world, const RayLightList& lights) {
             initialize();
 
+            int numThreads = std::thread::hardware_concurrency();
+            std::vector<std::thread> threads;
+            std::atomic<int> nextRow(_imageHeight - 1);
+
             RayCamera::scanlineSize.store(_imageHeight);
-            for (int j = _imageHeight - 1; j >= 0; j--) {
-                RayCamera::currentScanline.store(j);
-                for (int i = 0; i < _imageWidth; i++) {
-                    Color pixelColor(0.0f, 0.0f, 0.0f);
-                    for (int sample = 0; sample < _samplesPerPixel; sample++) {
-                        Ray ray = getRay(i, j);
-                        pixelColor += rayColor(ray, _maxDepth, world, lights);
+            
+            auto worker = [&]() {
+                int j;
+                while ((j = nextRow.fetch_sub(1)) >= 0) {
+                    RayCamera::currentScanline.store(j);
+                    for (int i = 0; i < _imageWidth; i++) {
+                        Color pixelColor(0.0f, 0.0f, 0.0f);
+                        for (int sample = 0; sample < _samplesPerPixel; sample++) {
+                            Ray ray = getRay(i, j);
+                            pixelColor += rayColor(ray, _maxDepth, world, lights);
+                        }
+                        pixelColor *= _pixelSamplesScale;
+
+                        pixelColor.x = linearToGamma(pixelColor.x);
+                        pixelColor.y = linearToGamma(pixelColor.y);
+                        pixelColor.z = linearToGamma(pixelColor.z);
+
+                        int index = (j * _imageWidth + i) * 3;
+                        static const Interval intensity(0.0f, 0.999f);
+                        imageDataBuffer[index]     = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.x));
+                        imageDataBuffer[index + 1] = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.y));
+                        imageDataBuffer[index + 2] = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.z));
                     }
-                    pixelColor *= _pixelSamplesScale;
-
-                    pixelColor.x = linearToGamma(pixelColor.x);
-                    pixelColor.y = linearToGamma(pixelColor.y);
-                    pixelColor.z = linearToGamma(pixelColor.z);
-
-                    int index = (j * _imageWidth + i) * 3;
-                    static const Interval intensity(0.0f, 0.999f);
-                    imageDataBuffer[index] = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.x));
-                    imageDataBuffer[index + 1] = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.y));
-                    imageDataBuffer[index + 2] = static_cast<unsigned char>(256 * intensity.clamp(pixelColor.z));
+                    if (onScanlineFinished) onScanlineFinished(j);
                 }
+            };
 
-                if (onScanlineFinished) onScanlineFinished(j);
-            }
+            for (int i = 0; i < numThreads; i++)
+                threads.emplace_back(worker);
+            for (auto& t : threads)
+                t.join();
         }
 
         float& aspectRatio() { return _aspectRatio; }
