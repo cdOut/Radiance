@@ -23,6 +23,7 @@
 #include <chrono>
 #include "editor/Exporter.h"
 #include "editor/MeshImporter.h"
+#include "editor/Importer.h"
 #include <mutex>
 #include "ImGuizmo.h"
 
@@ -800,6 +801,7 @@ class Application {
                         if (path) {
                             _scene->reset();
                             _scene->getCamera()->setAspect(_viewportSize.x / _viewportSize.y);
+                            Importer::importFromGLTF(*_scene, path);
                         }
                     }
                     if (ImGui::MenuItem("Save scene")) {

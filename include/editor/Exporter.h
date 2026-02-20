@@ -5,6 +5,13 @@
 #include "entity/Entity.h"
 #include "entity/util/Camera.h"
 #include "entity/light/Light.h"
+#include "entity/mesh/RawMesh.h"
+#include "entity/mesh/primitives/Cube.h"
+#include "entity/mesh/primitives/Sphere.h"
+#include "entity/mesh/primitives/Plane.h"
+#include "entity/mesh/primitives/Cylinder.h"
+#include "entity/mesh/primitives/Cone.h"
+#include "entity/mesh/primitives/Torus.h"
 
 class Exporter {
     public:
@@ -14,7 +21,7 @@ class Exporter {
             tinygltf::Buffer buffer;
             model.buffers.push_back(buffer);
             tinygltf::Value::Array lightsArray;
-            
+
             for (const auto& [_, e] : entities) {
                 if (Camera* camera = dynamic_cast<Camera*>(e.get())) {
                     tinygltf::Camera gltfCamera;
@@ -39,7 +46,7 @@ class Exporter {
                     M[2] = glm::vec4(-fwd, 0.0f);
                     M[3] = glm::vec4(pos, 1.0f);
 
-                    for (int i = 0; i < 16; i++) 
+                    for (int i = 0; i < 16; i++)
                         node.matrix.push_back(M[i/4][i%4]);
 
                     model.nodes.push_back(node);
@@ -68,6 +75,7 @@ class Exporter {
 
                     tinygltf::Node node;
                     node.light = lightIndex;
+                    node.name = e->getName();
 
                     glm::mat4 M = light->getModelMatrix();
                     for (int i = 0; i < 16; i++)
@@ -77,24 +85,19 @@ class Exporter {
                     scene.nodes.push_back(static_cast<int>(model.nodes.size() - 1));
 
                     tinygltf::Value::Object lightObj;
-
                     tinygltf::Value::Array colorArray;
                     colorArray.emplace_back(gltfLight.color[0]);
                     colorArray.emplace_back(gltfLight.color[1]);
                     colorArray.emplace_back(gltfLight.color[2]);
                     lightObj["color"] = tinygltf::Value(colorArray);
-
                     lightObj["intensity"] = tinygltf::Value(gltfLight.intensity);
-
                     lightObj["type"] = tinygltf::Value(gltfLight.type);
 
                     if (SpotLight* spotlight = dynamic_cast<SpotLight*>(light)) {
                         float size = spotlight->getSize();
                         float blend = spotlight->getBlend();
-
                         float outer = glm::radians(size * 0.5f);
                         float inner = outer * (1.0f - blend);
-
                         model.lights[lightIndex].spot = tinygltf::SpotLight();
                         model.lights[lightIndex].spot.innerConeAngle = inner;
                         model.lights[lightIndex].spot.outerConeAngle = outer;
@@ -104,6 +107,8 @@ class Exporter {
                 }
 
                 if (Mesh* mesh = dynamic_cast<Mesh*>(e.get())) {
+                    if (dynamic_cast<Grid*>(e.get())) continue;
+
                     auto& buffer = model.buffers[0];
 
                     auto verts = mesh->getVertices();
@@ -121,7 +126,6 @@ class Exporter {
                         float px = verts[i * 6 + 0];
                         float py = verts[i * 6 + 1];
                         float pz = verts[i * 6 + 2];
-
                         unsigned char* p;
                         p = reinterpret_cast<unsigned char*>(&px); buffer.data.insert(buffer.data.end(), p, p + 4);
                         p = reinterpret_cast<unsigned char*>(&py); buffer.data.insert(buffer.data.end(), p, p + 4);
@@ -134,7 +138,6 @@ class Exporter {
                         float nx = verts[i * 6 + 3];
                         float ny = verts[i * 6 + 4];
                         float nz = verts[i * 6 + 5];
-
                         unsigned char* p;
                         p = reinterpret_cast<unsigned char*>(&nx); buffer.data.insert(buffer.data.end(), p, p + 4);
                         p = reinterpret_cast<unsigned char*>(&ny); buffer.data.insert(buffer.data.end(), p, p + 4);
@@ -147,11 +150,7 @@ class Exporter {
                         uint32_t i0 = inds[i];
                         uint32_t i1 = inds[i + 1];
                         uint32_t i2 = inds[i + 2];
-
-                        uint32_t p0 = i0;
-                        uint32_t p1 = i2;
-                        uint32_t p2 = i1;
-
+                        uint32_t p0 = i0, p1 = i2, p2 = i1;
                         unsigned char* p;
                         p = reinterpret_cast<unsigned char*>(&p0); buffer.data.insert(buffer.data.end(), p, p + 4);
                         p = reinterpret_cast<unsigned char*>(&p1); buffer.data.insert(buffer.data.end(), p, p + 4);
@@ -164,7 +163,6 @@ class Exporter {
                     bvVertices.byteLength = normalByteOffset - vertexByteOffset;
                     bvVertices.target     = TINYGLTF_TARGET_ARRAY_BUFFER;
                     bvVertices.byteStride = 3 * sizeof(float);
-
                     int bvVerticesIndex = model.bufferViews.size();
                     model.bufferViews.push_back(bvVertices);
 
@@ -173,15 +171,14 @@ class Exporter {
                     bvIndices.byteOffset = indexByteOffset;
                     bvIndices.byteLength = indexCount * sizeof(uint32_t);
                     bvIndices.target     = TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER;
-
                     int bvIndicesIndex = model.bufferViews.size();
                     model.bufferViews.push_back(bvIndices);
 
                     tinygltf::BufferView bvNormals;
-                    bvNormals.buffer = 0;
+                    bvNormals.buffer     = 0;
                     bvNormals.byteOffset = normalByteOffset;
                     bvNormals.byteLength = vertexCount * 3 * sizeof(float);
-                    bvNormals.target = TINYGLTF_TARGET_ARRAY_BUFFER;
+                    bvNormals.target     = TINYGLTF_TARGET_ARRAY_BUFFER;
                     int bvNormalsIndex = model.bufferViews.size();
                     model.bufferViews.push_back(bvNormals);
 
@@ -194,18 +191,18 @@ class Exporter {
                     posAccessor.normalized    = false;
 
                     tinygltf::Accessor normalAccessor;
-                    normalAccessor.bufferView = bvNormalsIndex;
-                    normalAccessor.byteOffset = 0;
+                    normalAccessor.bufferView    = bvNormalsIndex;
+                    normalAccessor.byteOffset    = 0;
                     normalAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
-                    normalAccessor.count = vertexCount;
-                    normalAccessor.type = TINYGLTF_TYPE_VEC3;
-                    normalAccessor.normalized = false;
+                    normalAccessor.count         = vertexCount;
+                    normalAccessor.type          = TINYGLTF_TYPE_VEC3;
+                    normalAccessor.normalized    = false;
                     int normalAccessorIndex = model.accessors.size();
                     model.accessors.push_back(normalAccessor);
 
                     glm::vec3 minPos(FLT_MAX), maxPos(-FLT_MAX);
                     for (size_t i = 0; i < vertexCount; i++) {
-                        glm::vec3 p(verts[i * 3 + 0], verts[i * 3 + 1], verts[i * 3 + 2]);
+                        glm::vec3 p(verts[i * 6 + 0], verts[i * 6 + 1], verts[i * 6 + 2]);
                         minPos = glm::min(minPos, p);
                         maxPos = glm::max(maxPos, p);
                     }
@@ -222,40 +219,43 @@ class Exporter {
                     idxAccessor.count         = indexCount;
                     idxAccessor.type          = TINYGLTF_TYPE_SCALAR;
                     idxAccessor.normalized    = false;
-
                     int idxAccessorIndex = model.accessors.size();
                     model.accessors.push_back(idxAccessor);
 
                     tinygltf::Primitive primitive;
                     primitive.mode = TINYGLTF_MODE_TRIANGLES;
                     primitive.attributes["POSITION"] = posAccessorIndex;
-                    primitive.attributes["NORMAL"] = normalAccessorIndex;
+                    primitive.attributes["NORMAL"]   = normalAccessorIndex;
                     primitive.indices = idxAccessorIndex;
 
                     tinygltf::Material material;
                     material.name = "DefaultMaterial";
-
                     glm::vec3 baseColor = mesh->getMaterial().albedo;
-                    material.pbrMetallicRoughness.baseColorFactor = { baseColor.r, baseColor.g, baseColor.b, 1.0f };
-
-                    material.pbrMetallicRoughness.metallicFactor = mesh->getMaterial().metallic;
-                    material.pbrMetallicRoughness.roughnessFactor = mesh->getMaterial().roughness;
-
+                    material.pbrMetallicRoughness.baseColorFactor  = { baseColor.r, baseColor.g, baseColor.b, 1.0f };
+                    material.pbrMetallicRoughness.metallicFactor   = mesh->getMaterial().metallic;
+                    material.pbrMetallicRoughness.roughnessFactor  = mesh->getMaterial().roughness;
                     material.doubleSided = true;
-
                     int materialIndex = model.materials.size();
                     model.materials.push_back(material);
-
                     primitive.material = materialIndex;
 
                     tinygltf::Mesh gltfMesh;
                     gltfMesh.primitives.push_back(primitive);
+                    gltfMesh.name = e->getName();
+
+                    std::string primitiveType = getPrimitiveTypeName(mesh);
+                    if (!primitiveType.empty()) {
+                        tinygltf::Value::Object extrasObj;
+                        extrasObj["primitive"] = tinygltf::Value(primitiveType);
+                        gltfMesh.extras = tinygltf::Value(extrasObj);
+                    }
 
                     int meshIndex = model.meshes.size();
                     model.meshes.push_back(gltfMesh);
 
                     tinygltf::Node node;
                     node.mesh = meshIndex;
+                    node.name = e->getName();
 
                     glm::mat4 M = mesh->getModelMatrix();
                     for (int i = 0; i < 16; i++)
@@ -278,23 +278,31 @@ class Exporter {
             tinygltf::TinyGLTF gltf;
             return gltf.WriteGltfSceneToFile(&model, path, true, true, true, true);
         }
+
     private:
+        static std::string getPrimitiveTypeName(Mesh* mesh) {
+            if (dynamic_cast<Cube*>(mesh))     return "Cube";
+            if (dynamic_cast<Sphere*>(mesh))   return "Sphere";
+            if (dynamic_cast<Plane*>(mesh))    return "Plane";
+            if (dynamic_cast<Cylinder*>(mesh)) return "Cylinder";
+            if (dynamic_cast<Cone*>(mesh))     return "Cone";
+            if (dynamic_cast<Torus*>(mesh))    return "Torus";
+            return "";
+        }
+
         static float convertIntensity(Light* light) {
             return light->getIntensity() * 5000.0f;
         }
 
         static void fixWindingOrder(std::vector<unsigned int>& inds, const std::vector<float>& verts) {
             for (size_t i = 0; i < inds.size(); i += 3) {
-                unsigned int i0 = inds[i];
-                unsigned int i1 = inds[i + 1];
-                unsigned int i2 = inds[i + 2];
+                unsigned int i0 = inds[i], i1 = inds[i + 1], i2 = inds[i + 2];
 
                 glm::vec3 v0(verts[i0 * 6 + 0], verts[i0 * 6 + 1], verts[i0 * 6 + 2]);
                 glm::vec3 v1(verts[i1 * 6 + 0], verts[i1 * 6 + 1], verts[i1 * 6 + 2]);
                 glm::vec3 v2(verts[i2 * 6 + 0], verts[i2 * 6 + 1], verts[i2 * 6 + 2]);
 
                 glm::vec3 faceNormal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
-
                 glm::vec3 avgNormal(
                     verts[i0 * 6 + 3] + verts[i1 * 6 + 3] + verts[i2 * 6 + 3],
                     verts[i0 * 6 + 4] + verts[i1 * 6 + 4] + verts[i2 * 6 + 4],
@@ -302,39 +310,31 @@ class Exporter {
                 );
                 avgNormal = glm::normalize(avgNormal);
 
-                if (glm::dot(faceNormal, avgNormal) > 0.0f) {
+                if (glm::dot(faceNormal, avgNormal) > 0.0f)
                     std::swap(inds[i + 1], inds[i + 2]);
-                }
             }
         }
 
         static void weldVertices(std::vector<float>& verts, std::vector<unsigned int>& inds) {
             const int stride = 6;
-
             std::vector<float> newVerts;
             std::vector<unsigned int> newInds;
             std::map<std::array<float, 6>, unsigned int> uniqueMap;
 
             for (size_t i = 0; i < inds.size(); i++) {
                 unsigned int oldIndex = inds[i];
-
                 std::array<float, 6> key = {
-                    verts[oldIndex * stride + 0],
-                    verts[oldIndex * stride + 1],
-                    verts[oldIndex * stride + 2],
-                    verts[oldIndex * stride + 3],
-                    verts[oldIndex * stride + 4],
-                    verts[oldIndex * stride + 5]
+                    verts[oldIndex * stride + 0], verts[oldIndex * stride + 1],
+                    verts[oldIndex * stride + 2], verts[oldIndex * stride + 3],
+                    verts[oldIndex * stride + 4], verts[oldIndex * stride + 5]
                 };
 
                 if (uniqueMap.count(key) == 0) {
                     unsigned int newIndex = newVerts.size() / stride;
                     uniqueMap[key] = newIndex;
-
                     for (int j = 0; j < stride; j++)
                         newVerts.push_back(key[j]);
                 }
-
                 newInds.push_back(uniqueMap[key]);
             }
 
