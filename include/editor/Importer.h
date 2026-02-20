@@ -43,11 +43,7 @@ class Importer {
         }
 
     private:
-        static void decomposeMatrix(const std::vector<double>& mat,
-                                    glm::vec3& outPos,
-                                    glm::vec3& outEulerDeg,
-                                    glm::vec3& outScale)
-        {
+        static void decomposeMatrix(const std::vector<double>& mat, glm::vec3& outPos, glm::vec3& outEulerDeg, glm::vec3& outScale) {
             glm::mat4 M;
             for (int col = 0; col < 4; col++)
                 for (int row = 0; row < 4; row++)
@@ -58,8 +54,15 @@ class Importer {
             glm::quat rotation;
             glm::decompose(M, outScale, rotation, outPos, skew, perspective);
 
-            glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
-            outEulerDeg = euler;
+            // Match yawPitchRoll (YXZ) convention used in calculateMatrices
+            // Extract yaw(Y), pitch(X), roll(Z) manually from the quaternion
+            glm::mat4 rotMat = glm::mat4_cast(rotation);
+
+            float pitch = glm::degrees(asinf(glm::clamp(-rotMat[2][1], -1.0f, 1.0f)));
+            float yaw   = glm::degrees(atan2f(rotMat[2][0], rotMat[2][2]));
+            float roll  = glm::degrees(atan2f(rotMat[0][1], rotMat[1][1]));
+
+            outEulerDeg = glm::vec3(pitch, yaw, roll);
         }
 
         static void importNode(Scene& scene, const tinygltf::Model& model, int nodeIndex) {

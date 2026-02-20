@@ -171,7 +171,7 @@ class Application {
                     int height = _renderWidth * 9 / 16;
 
                     glBindTexture(GL_TEXTURE_2D, _renderId);
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _renderWidth, height, 0, GL_RGB, GL_UNSIGNED_BYTE, _renderData.data());
+                    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _renderWidth, height, GL_RGB, GL_UNSIGNED_BYTE, _renderData.data());
                     glBindTexture(GL_TEXTURE_2D, 0);
 
                     _scanlineUpdated = false;
@@ -866,6 +866,9 @@ class Application {
                 }
                 if (ImGui::BeginMenu("Render")) {
                     if (ImGui::MenuItem("Render scene", nullptr, nullptr, !_raytraceInProgress)) {
+                        if (_raytraceThread.joinable())
+                            _raytraceThread.join();
+
                         _raytraceInProgress = true;
                         _raytraceFinished = false;
 
@@ -898,8 +901,6 @@ class Application {
                             _raytraceFinished = true;
                             _scanlineUpdated = true;
                         });
-
-                        _raytraceThread.detach();
                     }
                     bool hasRender = !_renderData.empty();
                     if (ImGui::MenuItem("Save current render", nullptr, false, hasRender)) {
