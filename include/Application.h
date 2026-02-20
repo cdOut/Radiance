@@ -52,6 +52,14 @@ class Application {
             glfwSwapInterval(1);
             glfwSetWindowUserPointer(_window, this);
 
+            GLFWimage icon;
+            int channels;
+            icon.pixels = stbi_load("assets/textures/icon.png", &icon.width, &icon.height, &channels, 4);
+            if (icon.pixels) {
+                glfwSetWindowIcon(_window, 1, &icon);
+                stbi_image_free(icon.pixels);
+            }
+
             glfwSetFramebufferSizeCallback(_window, framebufferSizeCallback);
             glfwSetWindowSizeCallback(_window, windowSizeCallback);
             glfwSetCursorPosCallback(_window, mouseCallback); 

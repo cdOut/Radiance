@@ -5,7 +5,7 @@ namespace fs = std::filesystem;
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
-const char* WINDOW_TITLE = "raytracing-thesis";
+const char* WINDOW_TITLE = "Radiance";
 
 int main(int argc, char** argv) {
     fs::current_path(fs::path(argv[0]).parent_path());

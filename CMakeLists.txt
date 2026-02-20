@@ -83,17 +83,22 @@ target_include_directories(imguizmo PUBLIC ${imguizmo_SOURCE_DIR})
 target_link_libraries(imguizmo PUBLIC imgui)
 
 file(GLOB_RECURSE SRC_FILES src/*.cpp)
-add_executable(raycast-thesis MACOSX_BUNDLE WIN32 ${SRC_FILES})
-target_include_directories(raycast-thesis PRIVATE include ${tinygltf_SOURCE_DIR})
-target_link_libraries(raycast-thesis PRIVATE imgui glm stb_image tiny_gltf tinyfiledialogs imguizmo)
+
+if(WIN32)
+    list(APPEND SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/icon.rc)
+endif()
+
+add_executable(Radiance MACOSX_BUNDLE WIN32 ${SRC_FILES})
+target_include_directories(Radiance PRIVATE include ${tinygltf_SOURCE_DIR})
+target_link_libraries(Radiance PRIVATE imgui glm stb_image tiny_gltf tinyfiledialogs imguizmo)
 target_compile_options(stb_image PRIVATE -Wno-deprecated-declarations)
 
 if(APPLE)
-    target_link_libraries(raycast-thesis PRIVATE "-framework AppKit")
-    add_custom_command(TARGET raycast-thesis POST_BUILD
+    target_link_libraries(Radiance PRIVATE "-framework AppKit")
+    add_custom_command(TARGET Radiance POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_CURRENT_SOURCE_DIR}/assets
-            $<TARGET_FILE_DIR:raycast-thesis>/../Resources/assets
+            $<TARGET_FILE_DIR:Radiance>/../Resources/assets
     )
 endif()
 
