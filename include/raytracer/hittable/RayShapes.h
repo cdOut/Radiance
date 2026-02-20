@@ -14,6 +14,9 @@ class RaySphere : public Hittable {
         float sdf(const glm::vec3& p) const override {
             return glm::length(p) - _radius;
         }
+
+        glm::vec3 localBoundsMin() const override { return glm::vec3(-_radius); }
+        glm::vec3 localBoundsMax() const override { return glm::vec3( _radius); }
     private:
         float _radius = 0.5f;
 };
@@ -29,6 +32,9 @@ class RayPlane : public Hittable {
             glm::vec3 d = glm::abs(p) - glm::vec3(_halfSize, 0.001f, _halfSize);
             return glm::min(glm::max(d.x, glm::max(d.y, d.z)), 0.0f) + glm::length(glm::max(d, glm::vec3(0.0f)));
         }
+
+        glm::vec3 localBoundsMin() const override { return glm::vec3(-_halfSize, -0.001f, -_halfSize); }
+        glm::vec3 localBoundsMax() const override { return glm::vec3( _halfSize,  0.001f,  _halfSize); }
     private:
         float _halfSize = 0.5f;
 };
@@ -44,6 +50,9 @@ class RayCube : public Hittable {
             glm::vec3 d = glm::abs(p) - glm::vec3(_halfSize);
             return glm::min(glm::max(d.x, glm::max(d.y, d.z)), 0.0f) + glm::length(glm::max(d, glm::vec3(0.0f)));
         }
+
+        glm::vec3 localBoundsMin() const override { return glm::vec3(-_halfSize); }
+        glm::vec3 localBoundsMax() const override { return glm::vec3( _halfSize); }
     private:
         float _halfSize = 0.5f;
 };
@@ -59,6 +68,9 @@ class RayCylinder : public Hittable {
             glm::vec2 d = glm::vec2(glm::length(glm::vec2(p.x, p.z)) - _radius, fabs(p.y) - _halfHeight);
             return glm::min(glm::max(d.x, d.y), 0.0f) + glm::length(glm::max(d, glm::vec2(0.0f)));
         }
+
+        glm::vec3 localBoundsMin() const override { return glm::vec3(-_radius, -_halfHeight, -_radius); }
+        glm::vec3 localBoundsMax() const override { return glm::vec3( _radius,  _halfHeight,  _radius); }
     private:
         float _radius = 0.5f;
         float _halfHeight = 0.5f;
@@ -91,6 +103,9 @@ class RayCone : public Hittable {
 
             return glm::sqrt(d) * glm::sign(s);
         }
+
+        glm::vec3 localBoundsMin() const override { return glm::vec3(-_radius, -_height * 0.5f, -_radius); }
+        glm::vec3 localBoundsMax() const override { return glm::vec3( _radius,  _height * 0.5f,  _radius); }
     private:
         float _radius = 0.5f;
         float _height = 1.0f;
@@ -107,6 +122,9 @@ class RayTorus : public Hittable {
             glm::vec2 q = glm::vec2(glm::length(glm::vec2(p.x, p.z)) - _majorRadius, p.y);
             return glm::length(q) - _minorRadius;
         }
+
+        glm::vec3 localBoundsMin() const override { return glm::vec3(-(_majorRadius + _minorRadius), -_minorRadius, -(_majorRadius + _minorRadius)); }
+        glm::vec3 localBoundsMax() const override { return glm::vec3( (_majorRadius + _minorRadius),  _minorRadius,  (_majorRadius + _minorRadius)); }
     private:
         float _majorRadius = 0.5f;
         float _minorRadius = 0.25f;

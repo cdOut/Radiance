@@ -98,9 +98,12 @@ class Hittable {
             ));
         }
 
+        virtual glm::vec3 localBoundsMin() const { return glm::vec3(-1.0f); }
+        virtual glm::vec3 localBoundsMax() const { return glm::vec3( 1.0f); }
+
         bool intersectsAABB(const glm::vec3& o, const glm::vec3& d) const {
-            glm::vec3 min(-1.0f);
-            glm::vec3 max( 1.0f);
+            glm::vec3 min = localBoundsMin();
+            glm::vec3 max = localBoundsMax();
 
             glm::vec3 invDir = 1.0f / d;
 
