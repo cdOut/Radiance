@@ -61,6 +61,16 @@ public:
         return hit;
     }
 
+    bool shadowMarch(const Ray& ray, float lightDist) const override {
+        glm::vec3 o = glm::vec3(_modelMatrixI * glm::vec4(ray.origin(), 1.0f));
+        glm::vec3 d = glm::normalize(glm::vec3(_modelMatrixI * glm::vec4(ray.direction(), 0.0f)));
+
+        float tMin = lightDist;
+        HitRecord tmp;
+        bool hit = false;
+        traverseBVH(0, o, d, tMin, tmp, hit);
+        return hit;
+    }
 private:
     std::vector<Triangle> _triangles;
     std::vector<BVHNode> _bvh;

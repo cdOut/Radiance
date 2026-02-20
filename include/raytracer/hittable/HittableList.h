@@ -37,6 +37,14 @@ class HittableList : public Hittable {
             return hitAnything;
         }
 
+        bool shadowMarch(const Ray& ray, float lightDist) const override {
+            for (const auto& object : objects) {
+                if (object->shadowMarch(ray, lightDist))
+                    return true;
+            }
+            return false;
+        }
+
         float sdf(const glm::vec3& p) const override {
             return infinity;
         }

@@ -62,6 +62,26 @@ class Hittable {
             return false;
         }
 
+        virtual bool shadowMarch(const Ray& ray, float lightDist) const {
+            float maxScale = glm::max(glm::max(_transform.scale.x, _transform.scale.y), _transform.scale.z);
+            const float epsilon = 1e-3f / maxScale;
+            const int maxSteps = 100;
+
+            glm::vec3 o = glm::vec3(_modelMatrixI * glm::vec4(ray.origin(), 1.0f));
+            glm::vec3 d = glm::normalize(glm::vec3(_modelMatrixI * glm::vec4(ray.direction(), 0.0f)));
+
+            if (!intersectsAABB(o, d)) return false;
+
+            float t = 0.0f;
+            for (int i = 0; i < maxSteps; i++) {
+                float distance = sdf(o + d * t);
+                if (distance < epsilon) return true;
+                if (t > lightDist) return false;
+                t += distance;
+            }
+            return false;
+        }
+
         void setTransform(const Transform& transform) {
             _transform = transform;
             calculateMatrices();
