@@ -68,15 +68,29 @@ class Hittable {
             const int maxSteps = 100;
 
             glm::vec3 o = glm::vec3(_modelMatrixI * glm::vec4(ray.origin(), 1.0f));
-            glm::vec3 d = glm::normalize(glm::vec3(_modelMatrixI * glm::vec4(ray.direction(), 0.0f)));
+            glm::vec3 dLocal = glm::vec3(_modelMatrixI * glm::vec4(ray.direction(), 0.0f));
+            float localScale = glm::length(dLocal);
+            glm::vec3 d = glm::normalize(dLocal);
+            float localLightDist = lightDist * localScale;
 
-            if (!intersectsAABB(o, d)) return false;
+            glm::vec3 mn = localBoundsMin();
+            glm::vec3 mx = localBoundsMax();
+            glm::vec3 invD = 1.0f / d;
+            glm::vec3 t0 = (mn - o) * invD;
+            glm::vec3 t1 = (mx - o) * invD;
+            float tmin = glm::max(glm::max(glm::min(t0.x, t1.x), glm::min(t0.y, t1.y)), glm::min(t0.z, t1.z));
+            float tmax = glm::min(glm::min(glm::max(t0.x, t1.x), glm::max(t0.y, t1.y)), glm::max(t0.z, t1.z));
 
-            float t = 0.0f;
+            if (tmax < 0.0f || tmin > tmax) return false;
+
+            float t = glm::max(tmin, epsilon * 2.0f);
+
+            if (t >= localLightDist) return false;
+
             for (int i = 0; i < maxSteps; i++) {
                 float distance = sdf(o + d * t);
                 if (distance < epsilon) return true;
-                if (t > lightDist) return false;
+                if (t > localLightDist) return false;
                 t += distance;
             }
             return false;

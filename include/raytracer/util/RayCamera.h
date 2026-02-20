@@ -160,7 +160,7 @@ class RayCamera {
         }
 
         void denoise() {
-            for (int pass = 0; pass < 3; pass++) {
+            for (int pass = 0; pass < 2; pass++) {
                 denoisePass();
             }
         }
@@ -169,14 +169,14 @@ class RayCamera {
             int height = _imageHeight;
             std::vector<unsigned char> output(_imageWidth * height * 3);
 
-            const int radius = 2;
-            const float sigmaSpace = 2.0f;
+            const int radius = 1;
+            const float sigmaSpace = 1.0f;
 
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < _imageWidth; x++) {
                     glm::vec3 centerColor = getPixel(x, y);
                     float brightness = (centerColor.r + centerColor.g + centerColor.b) / 3.0f;
-                    float sigmaColor = glm::mix(0.02f, 0.08f, 1.0f - brightness);
+                    float sigmaColor = glm::mix(0.01f, 0.04f, 1.0f - brightness);
                     glm::vec3 sum(0.0f);
                     float weightSum = 0.0f;
 
@@ -227,12 +227,22 @@ class RayCamera {
 
                 for (const auto& lightPtr : lights.lights) {
                     const RayLight& light = *lightPtr;
-                    glm::vec3 lightDir = glm::normalize(light.directionFrom(rec.point));
 
+                    glm::vec3 lightDir = glm::normalize(light.directionFrom(rec.point));
                     float biasAmount = 0.1f;
-                    float lightDist = light.distanceFrom(rec.point) - biasAmount;
-                    Ray shadowRay(rec.point + rec.normal * biasAmount, lightDir);
+                    glm::vec3 shadowOrigin = rec.point + rec.normal * biasAmount;
+
+                    float lightDist;
+                    if (light.isFinite()) {
+                        float projectedBias = glm::dot(rec.normal * biasAmount, lightDir);
+                        lightDist = light.distanceFrom(rec.point) - projectedBias;
+                    } else {
+                        lightDist = 100.0f;
+                    }
+
+                    Ray shadowRay(shadowOrigin, lightDir);
                     bool inShadow = world.shadowMarch(shadowRay, lightDist);
+
                     if (!inShadow) {
                         resultColor += rec.material->shade(ray, rec, lightDir, light);
                     }
