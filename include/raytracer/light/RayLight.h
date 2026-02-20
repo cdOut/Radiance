@@ -14,6 +14,10 @@ class RayLight {
 
         virtual bool isFinite() const = 0;
 
+        virtual float distanceFrom(const glm::vec3& point) const {
+            return infinity;
+        }
+
         Color& color() { return _color; }
         float& intensity() { return _intensity; }
         Transform& transform() { return _transform; }
@@ -73,6 +77,10 @@ class RayPointLight : public RayLight {
             return _color * _intensity * attenuation;
         }
 
+        float distanceFrom(const glm::vec3& point) const override {
+            return glm::length(_transform.position - point);
+        }
+
         bool isFinite() const override {
             return true;
         }
@@ -114,6 +122,10 @@ class RaySpotLight : public RayLight {
             float attenuation = 1.0f / (_constant + _linear * distance + _quadratic * (distance * distance));
 
             return _color * _intensity * attenuation * spotIntensity;
+        }
+
+        float distanceFrom(const glm::vec3& point) const override {
+            return glm::length(_transform.position - point);
         }
 
         bool isFinite() const override {

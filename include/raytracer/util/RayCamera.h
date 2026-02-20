@@ -137,11 +137,14 @@ class RayCamera {
                     const RayLight& light = *lightPtr;
                     glm::vec3 lightDir = glm::normalize(light.directionFrom(rec.point));
 
-                    Ray shadowRay(rec.point + rec.normal * 0.05f, lightDir);
+                    float biasAmount = 0.1f;
+                    Ray shadowRay(rec.point + rec.normal * biasAmount, lightDir);
                     HitRecord shadowRec;
                     bool inShadow = false;
                     if (world.raymarch(shadowRay, shadowRec)) {
-                        if (glm::dot(shadowRec.normal, lightDir) < 0.0f) {
+                        float shadowDist = glm::length(shadowRec.point - shadowRay.origin());
+                        float lightDist = light.distanceFrom(rec.point) - biasAmount;
+                        if (glm::dot(shadowRec.normal, lightDir) < 0.0f && shadowDist < lightDist) {
                             inShadow = true;
                         }
                     }
