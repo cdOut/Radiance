@@ -229,6 +229,10 @@ class Application {
         ImGuizmo::OPERATION _gizmoOperation = ImGuizmo::TRANSLATE;
         ImGuizmo::MODE _gizmoMode = ImGuizmo::WORLD;
 
+        unsigned int _iconGrid = 0, _iconTranslate = 0, _iconRotate = 0, _iconScale = 0;
+        bool _showAddContextMenu = false, _showDeleteContextMenu = false;
+        ImVec2 _contextMenuPos;
+
         void initializeFramebuffer() {
             glGenFramebuffers(1, &_FBO);
             glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
@@ -415,7 +419,10 @@ class Application {
                 moveVector = glm::normalize(moveVector);
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && _isViewportHovered) {
-                if (ImGuizmo::IsOver()) return;
+                Entity* sel = _scene->getSelectedEntity();
+                bool gizmoActive = sel && sel != _scene->getCamera() && sel != _scene->getGrid();
+                if (gizmoActive && ImGuizmo::IsOver()) return;
+                if (ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopup)) return;
                 
                 ImVec2 mousePos = ImGui::GetMousePos();
                 ImVec2 localPos = {mousePos.x - _viewportPos.x, mousePos.y - _viewportPos.y};
@@ -508,25 +515,33 @@ class Application {
             if (iconToggleButton(_iconGrid, _scene->_showGrid, "Toggle Grid"))
                 _scene->_showGrid = !_scene->_showGrid;
             ImGui::SameLine();
-            if (iconToggleButton(_iconTranslate, _gizmoOperation == ImGuizmo::TRANSLATE, "Translate"))
+            if (iconToggleButton(_iconTranslate, _gizmoOperation == ImGuizmo::TRANSLATE, "Translate (G)"))
                 _gizmoOperation = ImGuizmo::TRANSLATE;
             ImGui::SameLine();
-            if (iconToggleButton(_iconRotate, _gizmoOperation == ImGuizmo::ROTATE, "Rotate"))
+            if (iconToggleButton(_iconRotate, _gizmoOperation == ImGuizmo::ROTATE, "Rotate (R)"))
                 _gizmoOperation = ImGuizmo::ROTATE;
             ImGui::SameLine();
-            if (iconToggleButton(_iconScale, _gizmoOperation == ImGuizmo::SCALE, "Scale"))
+            if (iconToggleButton(_iconScale, _gizmoOperation == ImGuizmo::SCALE, "Scale (S)"))
                 _gizmoOperation = ImGuizmo::SCALE;
 
             ImGui::EndChild();
 
+            if (_isViewportHovered && !ImGui::IsAnyItemActive()) {
+                if (ImGui::IsKeyPressed(ImGuiKey_A)) {
+                    _contextMenuPos = ImGui::GetMousePos();
+                    _showAddContextMenu = true;
+                }
+                if (ImGui::IsKeyPressed(ImGuiKey_X)) {
+                    _contextMenuPos = ImGui::GetMousePos();
+                    _showDeleteContextMenu = true;
+                }
+                if (ImGui::IsKeyPressed(ImGuiKey_G)) _gizmoOperation = ImGuizmo::TRANSLATE;
+                if (ImGui::IsKeyPressed(ImGuiKey_R)) _gizmoOperation = ImGuizmo::ROTATE;
+                if (ImGui::IsKeyPressed(ImGuiKey_S)) _gizmoOperation = ImGuizmo::SCALE;
+            }
+
             Entity* selected = _scene->getSelectedEntity();
             if (selected && selected != _scene->getCamera() && selected != _scene->getGrid()) {
-                if (_isViewportHovered && !ImGui::IsAnyItemActive()) {
-                    if (ImGui::IsKeyPressed(ImGuiKey_G)) _gizmoOperation = ImGuizmo::TRANSLATE;
-                    if (ImGui::IsKeyPressed(ImGuiKey_R)) _gizmoOperation = ImGuizmo::ROTATE;
-                    if (ImGui::IsKeyPressed(ImGuiKey_S)) _gizmoOperation = ImGuizmo::SCALE;
-                }
-
                 ImGuizmo::SetOrthographic(false);
                 ImGuizmo::SetDrawlist();
                 ImGuizmo::SetRect(_viewportPos.x, _viewportPos.y, _viewportSize.x, _viewportSize.y);
@@ -690,7 +705,7 @@ class Application {
             }
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered()) {
-                if (!ImGuizmo::IsOver()) {
+                if (!ImGuizmo::IsOver() && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopup)) {
                     if (selected)
                         selected->setIsSelected(false);
                     _scene->setSelectedEntity(nullptr);
@@ -964,11 +979,79 @@ class Application {
                 ImGui::EndPopup();
             }
 
+            if (_showAddContextMenu) {
+                ImGui::OpenPopup("##ViewportAddMenu");
+                _showAddContextMenu = false;
+            }
+
+            if (_showDeleteContextMenu) {
+                ImGui::OpenPopup("##ViewportDeleteMenu");
+                _showDeleteContextMenu = false;
+            }
+
+            if (ImGui::BeginPopup("##ViewportAddMenu")) {
+                ImGui::TextDisabled("Add");
+                ImGui::Separator();
+
+                if (ImGui::BeginMenu("Mesh")) {
+                    for (const auto& primitive : primitiveList) {
+                        if (ImGui::MenuItem(primitive.name)) {
+                            Entity* sel = _scene->getSelectedEntity();
+                            if (sel) sel->setIsSelected(false);
+                            Entity* entity = primitive.create(_scene.get());
+                            _scene->setSelectedEntity(entity);
+                            entity->setIsSelected(true);
+                            entity->setName(_scene->generateUniqueName(primitive.name));
+                            ImGui::CloseCurrentPopup();
+                        }
+                    }
+                    ImGui::EndMenu();
+                }
+
+                if (ImGui::BeginMenu("Light")) {
+                    for (const auto& light : lightList) {
+                        if (ImGui::MenuItem(light.name)) {
+                            Entity* sel = _scene->getSelectedEntity();
+                            if (sel) sel->setIsSelected(false);
+                            Entity* entity = light.create(_scene.get());
+                            _scene->setSelectedEntity(entity);
+                            entity->setIsSelected(true);
+                            entity->setName(_scene->generateUniqueName(light.name));
+                            ImGui::CloseCurrentPopup();
+                        }
+                    }
+                    ImGui::EndMenu();
+                }
+
+                ImGui::EndPopup();
+            }
+
+            if (ImGui::BeginPopup("##ViewportDeleteMenu")) {
+                ImGui::TextDisabled("Delete Entity");
+                ImGui::Separator();
+
+                Entity* sel = _scene->getSelectedEntity();
+                if (sel && sel != _scene->getCamera() && sel != _scene->getGrid()) {
+                    ImGui::Text("Delete \"%s\"?", sel->getName().c_str());
+                    ImGui::Spacing();
+                    if (ImGui::Button("Confirm", ImVec2(120, 0))) {
+                        _scene->removeEntity(sel);
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+                        ImGui::CloseCurrentPopup();
+                    }
+                } else {
+                    ImGui::TextDisabled("Nothing selected");
+                }
+
+                ImGui::EndPopup();
+            }
+
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }
-
-        unsigned int _iconGrid = 0, _iconTranslate = 0, _iconRotate = 0, _iconScale = 0;
 
         static unsigned int loadIcon(const char* path) {
             unsigned int texture;
