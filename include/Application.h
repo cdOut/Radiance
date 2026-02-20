@@ -886,6 +886,7 @@ class Application {
 
                             _raytraceInProgress = false;
                             _raytraceFinished = true;
+                            _scanlineUpdated = true;
                         });
 
                         _raytraceThread.detach();

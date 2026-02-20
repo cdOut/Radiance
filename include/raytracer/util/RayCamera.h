@@ -176,7 +176,7 @@ class RayCamera {
                 for (int x = 0; x < _imageWidth; x++) {
                     glm::vec3 centerColor = getPixel(x, y);
                     float brightness = (centerColor.r + centerColor.g + centerColor.b) / 3.0f;
-                    float sigmaColor = glm::mix(0.05f, 0.25f, 1.0f - brightness);
+                    float sigmaColor = glm::mix(0.02f, 0.08f, 1.0f - brightness);
                     glm::vec3 sum(0.0f);
                     float weightSum = 0.0f;
 
