@@ -415,6 +415,8 @@ class Application {
                 moveVector = glm::normalize(moveVector);
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && _isViewportHovered) {
+                if (ImGuizmo::IsOver()) return;
+                
                 ImVec2 mousePos = ImGui::GetMousePos();
                 ImVec2 localPos = {mousePos.x - _viewportPos.x, mousePos.y - _viewportPos.y};
 
@@ -688,9 +690,11 @@ class Application {
             }
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered()) {
-                if (selected)
-                    selected->setIsSelected(false);
-                _scene->setSelectedEntity(nullptr);
+                if (!ImGuizmo::IsOver()) {
+                    if (selected)
+                        selected->setIsSelected(false);
+                    _scene->setSelectedEntity(nullptr);
+                }
             }
 
             ImGui::EndChild();
