@@ -888,9 +888,13 @@ class Application {
                     }
                     bool hasRender = !_renderData.empty();
                     if (ImGui::MenuItem("Save current render", nullptr, false, hasRender)) {
-                        int height = _renderWidth * 9 / 16;
-                        stbi_flip_vertically_on_write(true);
-                        stbi_write_png("render.png", _renderWidth, height, 3, _renderData.data(), _renderWidth * 3);
+                        const char* filters[] = { "*.png" };
+                        const char* path = tinyfd_saveFileDialog("Save current render", "./render.png", 1, filters, NULL);
+                        if (path) {
+                            int height = _renderWidth * 9 / 16;
+                            stbi_flip_vertically_on_write(true);
+                            stbi_write_png("render.png", _renderWidth, height, 3, _renderData.data(), _renderWidth * 3);
+                        }
                     }
                     if (ImGui::MenuItem("Change render settings")) {
                         _openRenderPopup = true;
