@@ -29,8 +29,9 @@ class Hittable {
 
         virtual bool raymarch(const Ray& ray, HitRecord& rec) const {
             const float maxDistance = 100.0f;
-            const float epsilon = 1e-3f;
-            const int maxSteps = 50;
+            float maxScale = glm::max(glm::max(_transform.scale.x, _transform.scale.y), _transform.scale.z);
+            const float epsilon = 1e-3f / maxScale;
+            const int maxSteps = 500;
 
             glm::vec3 o = glm::vec3(_modelMatrixI * glm::vec4(ray.origin(), 1.0f));
             glm::vec3 d = glm::normalize(glm::vec3(_modelMatrixI * glm::vec4(ray.direction(), 0.0f)));

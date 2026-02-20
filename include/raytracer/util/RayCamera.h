@@ -137,9 +137,15 @@ class RayCamera {
                     const RayLight& light = *lightPtr;
                     glm::vec3 lightDir = glm::normalize(light.directionFrom(rec.point));
 
-                    Ray shadowRay(rec.point + rec.normal * 0.001f, lightDir);
+                    Ray shadowRay(rec.point + rec.normal * 0.05f, lightDir);
                     HitRecord shadowRec;
-                    if (!world.raymarch(shadowRay, shadowRec)) {
+                    bool inShadow = false;
+                    if (world.raymarch(shadowRay, shadowRec)) {
+                        if (glm::dot(shadowRec.normal, lightDir) < 0.0f) {
+                            inShadow = true;
+                        }
+                    }
+                    if (!inShadow) {
                         resultColor += rec.material->shade(ray, rec, lightDir, light);
                     }
                 }
