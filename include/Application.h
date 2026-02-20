@@ -212,6 +212,7 @@ class Application {
 
         bool _openSkyboxColorPopup = false;
         bool _openRenderPopup = false;
+        bool _openCameraPopup = false;
 
         int _renderWidth = 120;
         int _samplesPerPixel = 100;
@@ -905,6 +906,9 @@ class Application {
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Debug")) {
+                    if (ImGui::MenuItem("Set camera transform")) {
+                        _openCameraPopup = true;
+                    }
                     if (ImGui::MenuItem("Change skybox color")) {
                         _openSkyboxColorPopup = true;
                     }
@@ -942,14 +946,14 @@ class Application {
             ImGui::End();
 
             if (_openSkyboxColorPopup) {
-                ImGui::OpenPopup("Skybox color popup");
+                ImGui::OpenPopup("##Skybox color popup");
             }
 
-            if (ImGui::BeginPopup("Skybox color popup")) {
+            if (ImGui::BeginPopup("##Skybox color popup")) {
                 glm::vec3& skyboxColor = _scene->getSkyboxColor();
                 float color[3] = { skyboxColor.r, skyboxColor.g, skyboxColor.b };
 
-                ImGui::Text("Select skybox color");
+                ImGui::TextDisabled("Select skybox color");
                 ImGui::Separator();
 
                 if (ImGui::ColorPicker3("Skybox color", color)) {
@@ -965,12 +969,35 @@ class Application {
                 ImGui::EndPopup();
             }
 
-            if (_openRenderPopup) {
-                ImGui::OpenPopup("Render popup");
+            if (_openCameraPopup) {
+                ImGui::OpenPopup("##Camera transform popup");
             }
 
-            if (ImGui::BeginPopup("Render popup")) {
-                ImGui::Text("Render Settings");
+            if (ImGui::BeginPopup("##Camera transform popup")) {
+                ImGui::TextDisabled("Camera Transform");
+                ImGui::Separator();
+
+                Transform& camTransform = _scene->getCamera()->getTransform();
+
+                ImGui::DragFloat3("Position", glm::value_ptr(camTransform.position), 0.1f);
+                if (ImGui::DragFloat2("Rotation", glm::value_ptr(camTransform.rotation), 0.1f))
+                    _scene->getCamera()->recalculate();
+
+                ImGui::Separator();
+                if (ImGui::Button("Close", ImVec2(-1, 0))) {
+                    _openCameraPopup = false;
+                    ImGui::CloseCurrentPopup();
+                }
+
+                ImGui::EndPopup();
+            }
+
+            if (_openRenderPopup) {
+                ImGui::OpenPopup("##Render popup");
+            }
+
+            if (ImGui::BeginPopup("##Render popup")) {
+                ImGui::TextDisabled("Render Settings");
                 ImGui::Separator();
                 
                 ImGui::InputInt("Image width", &_renderWidth);

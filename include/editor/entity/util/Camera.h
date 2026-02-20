@@ -34,6 +34,11 @@ class Camera : public Entity {
             calculateVectors();
         }
 
+        void recalculate() {
+            _transform.rotation.x = glm::clamp(_transform.rotation.x, -89.0f, 89.0f);
+            calculateVectors();
+        }
+
         void setAspect(float aspect) {
             _aspect = aspect;
         }
