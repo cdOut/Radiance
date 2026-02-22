@@ -71,7 +71,6 @@ class DirectionalLight : public Light {
         DirectionalLight() : Light(LightType::Directional) {
             glGenVertexArrays(1, &_VAO);
             glGenBuffers(1, &_VBO);
-            
             _vertices[0] = _vertices[2] = {};
             _vertices[1] = _vertices[3] = {0.0f, 1.0f, 0.0f};
 
@@ -127,7 +126,7 @@ class DirectionalLight : public Light {
 
             shader->setInt(arrayString + ".atlasIndex", _atlasIndex);
             shader->setMat4(arrayString + ".lightSpaceMatrix", getLightSpaceMatrix());
-        };
+        }
 
         glm::mat4 getLightSpaceMatrix() {
             float nearPlane = 1.0f;
@@ -164,7 +163,7 @@ class PointLight : public Light {
 
             shader->setInt(arrayString + ".atlasIndex", _atlasIndex * 6);
             shader->setFloat(arrayString + ".farPlane", _farPlane);
-        };
+        }
 
         void getDepthShaderData(float& farPlane, std::vector<glm::mat4>& shadowTransforms) {
             shadowTransforms.clear();
@@ -213,7 +212,7 @@ class SpotLight : public Light {
 
             shader->setInt(arrayString + ".atlasIndex", _atlasIndex);
             shader->setMat4(arrayString + ".lightSpaceMatrix", getLightSpaceMatrix());
-        };
+        }
 
         glm::mat4 getLightSpaceMatrix() {
             glm::mat4 lightProjection = glm::perspective(glm::radians(_size), 1.0f, 0.1f, 100.0f);

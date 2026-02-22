@@ -62,7 +62,7 @@ class Application {
 
             glfwSetFramebufferSizeCallback(_window, framebufferSizeCallback);
             glfwSetWindowSizeCallback(_window, windowSizeCallback);
-            glfwSetCursorPosCallback(_window, mouseCallback); 
+            glfwSetCursorPosCallback(_window, mouseCallback);
             glfwSetMouseButtonCallback(_window, mouseButtonCallback);
 
             if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
@@ -260,7 +260,7 @@ class Application {
             glGenRenderbuffers(1, &_selectDepth);
 
             resizeSelectFramebuffer(800, 600);
-                     
+
             if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
                 throw std::runtime_error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
             

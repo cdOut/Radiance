@@ -4,13 +4,13 @@
 #include "Mesh.h"
 
 class RawMesh : public Mesh {
-public:
-    RawMesh(std::vector<float> verts, std::vector<unsigned int> inds) {
-        _vertices = std::move(verts);
-        _indices  = std::move(inds);
-    }
-protected:
-    void generateMesh() override {}
+    public:
+        RawMesh(std::vector<float> verts, std::vector<unsigned int> inds) {
+            _vertices = std::move(verts);
+            _indices  = std::move(inds);
+        }
+    protected:
+        void generateMesh() override {}
 };
 
 #endif

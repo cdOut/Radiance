@@ -30,7 +30,6 @@ class Raytracer {
                 if (Light* light = dynamic_cast<Light*>(e.get())) {
                     Color color = light->getColor();
                     float intensity = light->getIntensity();
-                    
                     if (dynamic_cast<DirectionalLight*>(e.get()))
                         _lights.add(std::make_shared<RayDirectionalLight>(color, intensity, transform));
                     if (dynamic_cast<PointLight*>(e.get()))
@@ -39,7 +38,6 @@ class Raytracer {
                         _lights.add(std::make_shared<RaySpotLight>(color, intensity, transform, spotLight->getSize(), spotLight->getBlend()));
                 }
 
-                std::shared_ptr<Hittable> rayMesh;
                 if (Mesh* mesh = dynamic_cast<Mesh*>(e.get())) {
                     std::shared_ptr<Hittable> rayMesh;
 

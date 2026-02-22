@@ -54,13 +54,11 @@ class Importer {
             glm::quat rotation;
             glm::decompose(M, outScale, rotation, outPos, skew, perspective);
 
-            // Match yawPitchRoll (YXZ) convention used in calculateMatrices
-            // Extract yaw(Y), pitch(X), roll(Z) manually from the quaternion
             glm::mat4 rotMat = glm::mat4_cast(rotation);
 
             float pitch = glm::degrees(asinf(glm::clamp(-rotMat[2][1], -1.0f, 1.0f)));
-            float yaw   = glm::degrees(atan2f(rotMat[2][0], rotMat[2][2]));
-            float roll  = glm::degrees(atan2f(rotMat[0][1], rotMat[1][1]));
+            float yaw = glm::degrees(atan2f(rotMat[2][0], rotMat[2][2]));
+            float roll = glm::degrees(atan2f(rotMat[0][1], rotMat[1][1]));
 
             outEulerDeg = glm::vec3(pitch, yaw, roll);
         }
@@ -103,10 +101,10 @@ class Importer {
                 glm::vec3 forward = -glm::normalize(glm::vec3(M[2]));
 
                 float pitch = glm::degrees(asinf(forward.y));
-                float yaw   = glm::degrees(atan2f(forward.z, forward.x));
+                float yaw = glm::degrees(atan2f(forward.z, forward.x));
 
-                camera->getTransform().position  = pos;
-                camera->getTransform().rotation  = glm::vec3(pitch, yaw, 0.0f);
+                camera->getTransform().position = pos;
+                camera->getTransform().rotation = glm::vec3(pitch, yaw, 0.0f);
                 camera->recalculate();
             } else if (!node.translation.empty() && !node.rotation.empty()) {
                 glm::vec3 pos(node.translation[0], node.translation[1], node.translation[2]);
@@ -121,7 +119,7 @@ class Importer {
                 glm::vec3 forward = -glm::normalize(glm::vec3(rotMat[2]));
 
                 float pitch = glm::degrees(asinf(forward.y));
-                float yaw   = glm::degrees(atan2f(forward.z, forward.x));
+                float yaw = glm::degrees(atan2f(forward.z, forward.x));
 
                 camera->getTransform().position = pos;
                 camera->getTransform().rotation = glm::vec3(pitch, yaw, 0.0f);
@@ -168,7 +166,7 @@ class Importer {
 
                 float outer = static_cast<float>(gltfLight.spot.outerConeAngle);
                 float inner = static_cast<float>(gltfLight.spot.innerConeAngle);
-                float size  = glm::degrees(outer) * 2.0f;
+                float size = glm::degrees(outer) * 2.0f;
                 float blend = (outer > 0.0f) ? (1.0f - inner / outer) : 0.0f;
                 light->getSize() = size;
                 light->getBlend() = blend;
@@ -196,8 +194,8 @@ class Importer {
             if (!node.matrix.empty())
                 decomposeMatrix(node.matrix, pos, eulerDeg, scale);
             else {
-                if (!node.translation.empty()) pos   = glm::vec3(node.translation[0], node.translation[1], node.translation[2]);
-                if (!node.scale.empty())       scale = glm::vec3(node.scale[0],       node.scale[1],       node.scale[2]);
+                if (!node.translation.empty()) pos = glm::vec3(node.translation[0], node.translation[1], node.translation[2]);
+                if (!node.scale.empty()) scale = glm::vec3(node.scale[0], node.scale[1], node.scale[2]);
                 if (!node.rotation.empty()) {
                     glm::quat q(
                         static_cast<float>(node.rotation[3]),
@@ -217,19 +215,19 @@ class Importer {
                     const auto& pbr = gltfMat.pbrMetallicRoughness;
                     if (pbr.baseColorFactor.size() >= 3)
                         mat.albedo = glm::vec3(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2]);
-                    mat.metallic  = static_cast<float>(pbr.metallicFactor);
+                    mat.metallic = static_cast<float>(pbr.metallicFactor);
                     mat.roughness = static_cast<float>(pbr.roughnessFactor);
                 }
             }
 
             Mesh* mesh = nullptr;
 
-            if      (primitiveType == "Cube")     mesh = scene.createEntity<Cube>();
-            else if (primitiveType == "Sphere")   mesh = scene.createEntity<Sphere>();
-            else if (primitiveType == "Plane")    mesh = scene.createEntity<Plane>();
+            if (primitiveType == "Cube") mesh = scene.createEntity<Cube>();
+            else if (primitiveType == "Sphere") mesh = scene.createEntity<Sphere>();
+            else if (primitiveType == "Plane") mesh = scene.createEntity<Plane>();
             else if (primitiveType == "Cylinder") mesh = scene.createEntity<Cylinder>();
-            else if (primitiveType == "Cone")     mesh = scene.createEntity<Cone>();
-            else if (primitiveType == "Torus")    mesh = scene.createEntity<Torus>();
+            else if (primitiveType == "Cone") mesh = scene.createEntity<Cone>();
+            else if (primitiveType == "Torus") mesh = scene.createEntity<Torus>();
             else {
                 auto [verts, inds] = readGeometry(model, gltfMesh);
                 if (verts.empty()) return;
@@ -240,7 +238,7 @@ class Importer {
 
             mesh->getTransform().position = pos;
             mesh->getTransform().rotation = eulerDeg;
-            mesh->getTransform().scale    = scale;
+            mesh->getTransform().scale = scale;
 
             mesh->getMaterial() = mat;
 
@@ -261,8 +259,8 @@ class Importer {
             auto posIt = primitive.attributes.find("POSITION");
             if (posIt == primitive.attributes.end()) return {vertices, indices};
 
-            const tinygltf::Accessor&   posAcc = model.accessors[posIt->second];
-            const tinygltf::BufferView& posBV  = model.bufferViews[posAcc.bufferView];
+            const tinygltf::Accessor& posAcc = model.accessors[posIt->second];
+            const tinygltf::BufferView& posBV = model.bufferViews[posAcc.bufferView];
             const float* posData = reinterpret_cast<const float*>(
                 model.buffers[posBV.buffer].data.data() + posBV.byteOffset + posAcc.byteOffset);
             size_t posStride = posBV.byteStride ? posBV.byteStride / sizeof(float) : 3;
@@ -271,8 +269,8 @@ class Importer {
             size_t normStride = 3;
             auto normIt = primitive.attributes.find("NORMAL");
             if (normIt != primitive.attributes.end()) {
-                const tinygltf::Accessor&   normAcc = model.accessors[normIt->second];
-                const tinygltf::BufferView& normBV  = model.bufferViews[normAcc.bufferView];
+                const tinygltf::Accessor& normAcc = model.accessors[normIt->second];
+                const tinygltf::BufferView& normBV = model.bufferViews[normAcc.bufferView];
                 normData = reinterpret_cast<const float*>(
                     model.buffers[normBV.buffer].data.data() + normBV.byteOffset + normAcc.byteOffset);
                 normStride = normBV.byteStride ? normBV.byteStride / sizeof(float) : 3;
@@ -294,8 +292,8 @@ class Importer {
             }
 
             if (primitive.indices >= 0) {
-                const tinygltf::Accessor&   idxAcc = model.accessors[primitive.indices];
-                const tinygltf::BufferView& idxBV  = model.bufferViews[idxAcc.bufferView];
+                const tinygltf::Accessor& idxAcc = model.accessors[primitive.indices];
+                const tinygltf::BufferView& idxBV = model.bufferViews[idxAcc.bufferView];
                 const unsigned char* rawIdx = model.buffers[idxBV.buffer].data.data() + idxBV.byteOffset + idxAcc.byteOffset;
 
                 for (size_t i = 0; i < idxAcc.count; i++) {

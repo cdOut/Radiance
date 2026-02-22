@@ -19,7 +19,6 @@ class RayCamera {
             std::atomic<int> nextRow(_imageHeight - 1);
 
             RayCamera::scanlineSize.store(_imageHeight);
-            
             auto worker = [&]() {
                 int j;
                 while ((j = nextRow.fetch_sub(1)) >= 0) {
@@ -28,7 +27,6 @@ class RayCamera {
                         Color mean(0.0f);
                         Color M2(0.0f);
                         int samplesTaken = 0;
-                        
                         for (int sample = 0; sample < _samplesPerPixel; sample++) {
                             Ray ray = getRay(i, j);
                             Color newSample = rayColor(ray, _maxDepth, world, lights);
@@ -68,7 +66,6 @@ class RayCamera {
                 threads.emplace_back(worker);
             for (auto& t : threads)
                 t.join();
-            
             denoise();
         }
 
@@ -83,7 +80,7 @@ class RayCamera {
         inline static std::atomic<int> currentScanline = -1;
         inline static std::atomic<int> scanlineSize = -1;
     private:
-        float _aspectRatio = 1.0;
+        float _aspectRatio = 1.0f;
         int _imageWidth = 100;
         int _samplesPerPixel = 10;
         int _maxDepth = 10;
@@ -91,7 +88,7 @@ class RayCamera {
         int _minSamplesPerPixel = 10;
         float _varianceThreshold = 0.0005f;
 
-        double fov = 90.0f;
+        float fov = 90.0f;
         int _imageHeight;
         float _pixelSamplesScale;
         glm::vec3 _center;
@@ -127,10 +124,10 @@ class RayCamera {
             _center = _transform.position;
             calculateVectors();
 
-            float focalLength = 1.0;
+            float focalLength = 1.0f;
             float theta = glm::radians(fov);
             float h = glm::tan(theta / 2.0f);
-            float viewportHeight = 2.0 * h * focalLength;
+            float viewportHeight = 2.0f * h * focalLength;
             float viewportWidth = viewportHeight * (float(_imageWidth) / _imageHeight);
 
             glm::vec3 viewportU = _right * viewportWidth;

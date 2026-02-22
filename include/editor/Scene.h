@@ -53,7 +53,6 @@ class Scene {
             glViewport(0, 0, 4096, 4096);
             glClearDepth(1.0f);
             glClear(GL_DEPTH_BUFFER_BIT);
-            
             for (Light* light : _lights) {
                 if (PointLight* pointLight = dynamic_cast<PointLight*>(light)) {
                     renderShadowPointPass(pointLight);
@@ -79,7 +78,7 @@ class Scene {
 
         void render(float deltaTime) {
             glEnable(GL_STENCIL_TEST);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); 
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
             glClear(GL_STENCIL_BUFFER_BIT);
 
             glStencilMask(0x00);
@@ -114,7 +113,7 @@ class Scene {
                 Material& material = mesh->getMaterial();
 
                 glStencilMask(0xFF);
-                glStencilFunc(GL_ALWAYS, 1, 0xFF);  
+                glStencilFunc(GL_ALWAYS, 1, 0xFF);
                 glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
                 glDisable(GL_DEPTH_TEST);
@@ -167,7 +166,6 @@ class Scene {
 
                     _gpuSelectShader->setVec3("idColor", e->getIdColor());
                     _gpuSelectShader->setInt("isBillboard", false);
-                    
                     shader = e->getShader();
                     e->setShader(_gpuSelectShader.get());
                     e->render();
@@ -178,7 +176,6 @@ class Scene {
             for (Light* light : _lights) {
                 _gpuSelectShader->setVec3("idColor", light->getIdColor());
                 _gpuSelectShader->setInt("isBillboard", true);
-                
                 shader = light->getShader();
                 light->setShader(_gpuSelectShader.get());
                 light->render();
@@ -285,7 +282,6 @@ class Scene {
 
             unsigned char* pointData = _pointShadowAtlas->getShadowAtlasData();
             unsigned char* shadowData = _shadowAtlas->getShadowAtlasData();
-            
             _shadowAtlasesSavingThread = std::thread([this, pointData, shadowData]() {
                 _shadowAtlasesSavingInProgress = true;
                 stbi_write_png("pointShadowAtlas.png", 4096, 4096, 1, pointData, 4096);
@@ -332,7 +328,7 @@ class Scene {
             glGenTextures(1, &texture);
             glBindTexture(GL_TEXTURE_2D, texture);
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -340,7 +336,7 @@ class Scene {
             stbi_set_flip_vertically_on_load(true);
 
             int width, height, nrChannels;
-            unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
+            unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
             if (data) {
                 GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
                 glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
@@ -442,7 +438,6 @@ class Scene {
 
         void uploadLightsToShader(Shader* shader) {
             unsigned int dirIndex = 0, pointIndex = 0, spotIndex = 0;
-            
             for (Light* light : _lights) {
                 switch (light->getType()) {
                     case LightType::Directional:

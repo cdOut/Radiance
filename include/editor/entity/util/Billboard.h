@@ -19,7 +19,7 @@ class Billboard {
                 { h,  h, 0.0f},
             };
 
-            std::vector <glm::vec2> txc {
+            std::vector<glm::vec2> txc {
                 {0.0f, 0.0f},
                 {1.0f, 0.0f},
                 {0.0f, 1.0f},
@@ -76,7 +76,7 @@ class Billboard {
         unsigned int _texture;
 
         Shader* _shader = nullptr;
-        
+
         void initializeBuffers() {
             glGenVertexArrays(1, &_VAO);
             glGenBuffers(1, &_VBO);

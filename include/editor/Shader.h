@@ -24,9 +24,9 @@ class Shader {
             std::ifstream fShaderFile;
             std::ifstream gShaderFile;
 
-            vShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-            fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-            gShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
+            vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            gShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
             try {
                 vShaderFile.open(vertexPath);
@@ -68,7 +68,7 @@ class Shader {
             glCompileShader(vertex);
 
             glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
-            if(!success)
+            if (!success)
             {
                 glGetShaderInfoLog(vertex, 512, NULL, infoLog);
                 std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
@@ -79,7 +79,7 @@ class Shader {
             glCompileShader(fragment);
 
             glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
-            if(!success)
+            if (!success)
             {
                 glGetShaderInfoLog(fragment, 512, NULL, infoLog);
                 std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
@@ -89,7 +89,6 @@ class Shader {
             glAttachShader(ID, vertex);
             glAttachShader(ID, fragment);
 
-
             if (geometryPath) {
                 const char* gShaderCode = geometryCode.c_str();
 
@@ -98,7 +97,7 @@ class Shader {
                 glCompileShader(geometry);
 
                 glGetShaderiv(geometry, GL_COMPILE_STATUS, &success);
-                if(!success)
+                if (!success)
                 {
                     glGetShaderInfoLog(geometry, 512, NULL, infoLog);
                     std::cout << "ERROR::SHADER::GEOMETRY::COMPILATION_FAILED\n" << infoLog << std::endl;
@@ -110,7 +109,7 @@ class Shader {
             glLinkProgram(ID);
 
             glGetProgramiv(ID, GL_LINK_STATUS, &success);
-            if(!success)
+            if (!success)
             {
                 glGetProgramInfoLog(ID, 512, NULL, infoLog);
                 std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
@@ -142,17 +141,17 @@ class Shader {
         }
 
         void setMat3(const std::string &name, glm::mat3 value) const {
-            glUniformMatrix3fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE,  glm::value_ptr(value));
+            glUniformMatrix3fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
         }
 
         void setMat4(const std::string &name, glm::mat4 value) const {
-            glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE,  glm::value_ptr(value));
+            glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
         }
 
         void setViewProjection(glm::mat4 view, glm::mat4 projection) {
             use();
-            glUniformMatrix4fv(glGetUniformLocation(ID, "view"), 1, GL_FALSE,  glm::value_ptr(view));
-            glUniformMatrix4fv(glGetUniformLocation(ID, "projection"), 1, GL_FALSE,  glm::value_ptr(projection));
+            glUniformMatrix4fv(glGetUniformLocation(ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
+            glUniformMatrix4fv(glGetUniformLocation(ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
         }
 };
 

@@ -37,7 +37,7 @@ class Exporter {
 
                     glm::vec3 pos = camera->getTransform().position;
                     glm::vec3 fwd = camera->getForward();
-                    glm::vec3 up  = camera->getUp();
+                    glm::vec3 up = camera->getUp();
                     glm::vec3 right = camera->getRight();
 
                     glm::mat4 M(1.0f);
@@ -47,7 +47,7 @@ class Exporter {
                     M[3] = glm::vec4(pos, 1.0f);
 
                     for (int i = 0; i < 16; i++)
-                        node.matrix.push_back(M[i/4][i%4]);
+                        node.matrix.push_back(M[i / 4][i % 4]);
 
                     model.nodes.push_back(node);
                     scene.nodes.push_back(model.nodes.size() - 1);
@@ -112,13 +112,13 @@ class Exporter {
                     auto& buffer = model.buffers[0];
 
                     auto verts = mesh->getVertices();
-                    auto inds  = mesh->getIndices();
+                    auto inds = mesh->getIndices();
 
                     weldVertices(verts, inds);
                     fixWindingOrder(inds, verts);
 
                     const size_t vertexCount = verts.size() / 6;
-                    const size_t indexCount  = inds.size();
+                    const size_t indexCount = inds.size();
 
                     size_t vertexByteOffset = buffer.data.size();
 
@@ -158,45 +158,45 @@ class Exporter {
                     }
 
                     tinygltf::BufferView bvVertices;
-                    bvVertices.buffer     = 0;
+                    bvVertices.buffer = 0;
                     bvVertices.byteOffset = vertexByteOffset;
                     bvVertices.byteLength = normalByteOffset - vertexByteOffset;
-                    bvVertices.target     = TINYGLTF_TARGET_ARRAY_BUFFER;
+                    bvVertices.target = TINYGLTF_TARGET_ARRAY_BUFFER;
                     bvVertices.byteStride = 3 * sizeof(float);
                     int bvVerticesIndex = model.bufferViews.size();
                     model.bufferViews.push_back(bvVertices);
 
                     tinygltf::BufferView bvIndices;
-                    bvIndices.buffer     = 0;
+                    bvIndices.buffer = 0;
                     bvIndices.byteOffset = indexByteOffset;
                     bvIndices.byteLength = indexCount * sizeof(uint32_t);
-                    bvIndices.target     = TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER;
+                    bvIndices.target = TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER;
                     int bvIndicesIndex = model.bufferViews.size();
                     model.bufferViews.push_back(bvIndices);
 
                     tinygltf::BufferView bvNormals;
-                    bvNormals.buffer     = 0;
+                    bvNormals.buffer = 0;
                     bvNormals.byteOffset = normalByteOffset;
                     bvNormals.byteLength = vertexCount * 3 * sizeof(float);
-                    bvNormals.target     = TINYGLTF_TARGET_ARRAY_BUFFER;
+                    bvNormals.target = TINYGLTF_TARGET_ARRAY_BUFFER;
                     int bvNormalsIndex = model.bufferViews.size();
                     model.bufferViews.push_back(bvNormals);
 
                     tinygltf::Accessor posAccessor;
-                    posAccessor.bufferView    = bvVerticesIndex;
-                    posAccessor.byteOffset    = 0;
+                    posAccessor.bufferView = bvVerticesIndex;
+                    posAccessor.byteOffset = 0;
                     posAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
-                    posAccessor.count         = vertexCount;
-                    posAccessor.type          = TINYGLTF_TYPE_VEC3;
-                    posAccessor.normalized    = false;
+                    posAccessor.count = vertexCount;
+                    posAccessor.type = TINYGLTF_TYPE_VEC3;
+                    posAccessor.normalized = false;
 
                     tinygltf::Accessor normalAccessor;
-                    normalAccessor.bufferView    = bvNormalsIndex;
-                    normalAccessor.byteOffset    = 0;
+                    normalAccessor.bufferView = bvNormalsIndex;
+                    normalAccessor.byteOffset = 0;
                     normalAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
-                    normalAccessor.count         = vertexCount;
-                    normalAccessor.type          = TINYGLTF_TYPE_VEC3;
-                    normalAccessor.normalized    = false;
+                    normalAccessor.count = vertexCount;
+                    normalAccessor.type = TINYGLTF_TYPE_VEC3;
+                    normalAccessor.normalized = false;
                     int normalAccessorIndex = model.accessors.size();
                     model.accessors.push_back(normalAccessor);
 
@@ -213,27 +213,27 @@ class Exporter {
                     model.accessors.push_back(posAccessor);
 
                     tinygltf::Accessor idxAccessor;
-                    idxAccessor.bufferView    = bvIndicesIndex;
-                    idxAccessor.byteOffset    = 0;
+                    idxAccessor.bufferView = bvIndicesIndex;
+                    idxAccessor.byteOffset = 0;
                     idxAccessor.componentType = TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT;
-                    idxAccessor.count         = indexCount;
-                    idxAccessor.type          = TINYGLTF_TYPE_SCALAR;
-                    idxAccessor.normalized    = false;
+                    idxAccessor.count = indexCount;
+                    idxAccessor.type = TINYGLTF_TYPE_SCALAR;
+                    idxAccessor.normalized = false;
                     int idxAccessorIndex = model.accessors.size();
                     model.accessors.push_back(idxAccessor);
 
                     tinygltf::Primitive primitive;
                     primitive.mode = TINYGLTF_MODE_TRIANGLES;
                     primitive.attributes["POSITION"] = posAccessorIndex;
-                    primitive.attributes["NORMAL"]   = normalAccessorIndex;
+                    primitive.attributes["NORMAL"] = normalAccessorIndex;
                     primitive.indices = idxAccessorIndex;
 
                     tinygltf::Material material;
                     material.name = "DefaultMaterial";
                     glm::vec3 baseColor = mesh->getMaterial().albedo;
-                    material.pbrMetallicRoughness.baseColorFactor  = { baseColor.r, baseColor.g, baseColor.b, 1.0f };
-                    material.pbrMetallicRoughness.metallicFactor   = mesh->getMaterial().metallic;
-                    material.pbrMetallicRoughness.roughnessFactor  = mesh->getMaterial().roughness;
+                    material.pbrMetallicRoughness.baseColorFactor = { baseColor.r, baseColor.g, baseColor.b, 1.0f };
+                    material.pbrMetallicRoughness.metallicFactor = mesh->getMaterial().metallic;
+                    material.pbrMetallicRoughness.roughnessFactor = mesh->getMaterial().roughness;
                     material.doubleSided = true;
                     int materialIndex = model.materials.size();
                     model.materials.push_back(material);
@@ -259,7 +259,7 @@ class Exporter {
 
                     glm::mat4 M = mesh->getModelMatrix();
                     for (int i = 0; i < 16; i++)
-                        node.matrix.push_back(M[i/4][i%4]);
+                        node.matrix.push_back(M[i / 4][i % 4]);
 
                     model.nodes.push_back(node);
                     scene.nodes.push_back(model.nodes.size() - 1);
@@ -281,12 +281,12 @@ class Exporter {
 
     private:
         static std::string getPrimitiveTypeName(Mesh* mesh) {
-            if (dynamic_cast<Cube*>(mesh))     return "Cube";
-            if (dynamic_cast<Sphere*>(mesh))   return "Sphere";
-            if (dynamic_cast<Plane*>(mesh))    return "Plane";
+            if (dynamic_cast<Cube*>(mesh)) return "Cube";
+            if (dynamic_cast<Sphere*>(mesh)) return "Sphere";
+            if (dynamic_cast<Plane*>(mesh)) return "Plane";
             if (dynamic_cast<Cylinder*>(mesh)) return "Cylinder";
-            if (dynamic_cast<Cone*>(mesh))     return "Cone";
-            if (dynamic_cast<Torus*>(mesh))    return "Torus";
+            if (dynamic_cast<Cone*>(mesh)) return "Cone";
+            if (dynamic_cast<Torus*>(mesh)) return "Torus";
             return "";
         }
 

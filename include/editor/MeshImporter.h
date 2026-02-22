@@ -32,8 +32,8 @@ class MeshImporter {
             auto posIt = primitive.attributes.find("POSITION");
             if (posIt == primitive.attributes.end()) return false;
 
-            const tinygltf::Accessor&   posAcc = model.accessors[posIt->second];
-            const tinygltf::BufferView& posBV  = model.bufferViews[posAcc.bufferView];
+            const tinygltf::Accessor& posAcc = model.accessors[posIt->second];
+            const tinygltf::BufferView& posBV = model.bufferViews[posAcc.bufferView];
             const float* posData = reinterpret_cast<const float*>(
                 model.buffers[posBV.buffer].data.data() + posBV.byteOffset + posAcc.byteOffset);
             size_t posStride = posBV.byteStride ? posBV.byteStride / sizeof(float) : 3;
@@ -42,8 +42,8 @@ class MeshImporter {
             size_t normStride = 3;
             auto normIt = primitive.attributes.find("NORMAL");
             if (normIt != primitive.attributes.end()) {
-                const tinygltf::Accessor&   normAcc = model.accessors[normIt->second];
-                const tinygltf::BufferView& normBV  = model.bufferViews[normAcc.bufferView];
+                const tinygltf::Accessor& normAcc = model.accessors[normIt->second];
+                const tinygltf::BufferView& normBV = model.bufferViews[normAcc.bufferView];
                 normData = reinterpret_cast<const float*>(
                     model.buffers[normBV.buffer].data.data() + normBV.byteOffset + normAcc.byteOffset);
                 normStride = normBV.byteStride ? normBV.byteStride / sizeof(float) : 3;
@@ -65,8 +65,8 @@ class MeshImporter {
             }
 
             if (primitive.indices >= 0) {
-                const tinygltf::Accessor&   idxAcc = model.accessors[primitive.indices];
-                const tinygltf::BufferView& idxBV  = model.bufferViews[idxAcc.bufferView];
+                const tinygltf::Accessor& idxAcc = model.accessors[primitive.indices];
+                const tinygltf::BufferView& idxBV = model.bufferViews[idxAcc.bufferView];
                 const unsigned char* rawIdx = model.buffers[idxBV.buffer].data.data() + idxBV.byteOffset + idxAcc.byteOffset;
 
                 for (size_t i = 0; i < idxAcc.count; i++) {
