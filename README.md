@@ -15,10 +15,7 @@ Originally started as a deep dive into graphics programming to understand how mo
 
 ## Demo
 
-<video src="readme/demo.mp4"
-       controls
-       style="width: 100%; max-width: 100%;">
-</video>
+https://github.com/user-attachments/assets/284904af-04ac-4789-9212-8d4cd632d3df
 
 ---
 
