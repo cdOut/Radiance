@@ -44,7 +44,7 @@ https://github.com/user-attachments/assets/284904af-04ac-4789-9212-8d4cd632d3df
 Clone the repository and run the build script:
 
 ```bash
-git clone https://github.com/cdOut/raytracing-thesis.git
-cd raytracing-thesis
+git clone https://github.com/cdOut/Radiance.git
+cd Radiance
 ./build.sh
 ```
